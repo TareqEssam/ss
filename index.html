@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مساعد اللجان </title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/ai-assistant.css">
+    
+    <!-- Arabic Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* الصفحة الرئيسية */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* الهيدر */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-right: 5px solid #2c3e50;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .logo-icon {
+            font-size: 48px;
+            color: #2c3e50;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #2c3e50, #3498db);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header p {
+            color: #555;
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto 20px;
+        }
+        
+        /* بطاقات المعلومات */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 50px;
+        }
+        
+        .info-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-top: 4px solid #3498db;
+        }
+        
+        .info-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .info-card h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .info-card h3 i {
+            color: #3498db;
+        }
+        
+        .info-card ul {
+            list-style-type: none;
+            padding-right: 20px;
+        }
+        
+        .info-card li {
+            margin-bottom: 12px;
+            padding-right: 10px;
+            position: relative;
+        }
+        
+        .info-card li:before {
+            content: "•";
+            color: #3498db;
+            font-weight: bold;
+            position: absolute;
+            right: -15px;
+        }
+        
+        /* إحصائيات النظام */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 50px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border-top: 4px solid #2ecc71;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            color: #555;
+            font-size: 1rem;
+        }
+        
+        /* كيفية الاستخدام */
+        .usage-guide {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            margin-bottom: 50px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .usage-guide h2 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2rem;
+        }
+        
+        .steps {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+        }
+        
+        .step {
+            flex: 1;
+            min-width: 250px;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .step-number {
+            width: 60px;
+            height: 60px;
+            background: #3498db;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0 auto 20px;
+        }
+        
+        /* الفوتر */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            background: #2c3e50;
+            color: white;
+            border-radius: 15px;
+            margin-top: 40px;
+        }
+        
+        .footer p {
+            margin-bottom: 10px;
+        }
+        
+        .version {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 0.9rem;
+        }
+        
+        /* تلميح للواجهة العائمة */
+        .assistant-hint {
+            position: fixed;
+            bottom: 100px;
+            left: 20px;
+            background: rgba(44, 62, 80, 0.9);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            display: none;
+            z-index: 9999;
+            max-width: 300px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        /* لمسات متجاوبة */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .steps {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- الهيدر -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">🏭</div>
+                <div>
+                    <h1>مساعد اللجان</h1>
+                    <p>نظام لمساعدة فريق عمل اللجان المتخصص في تراخيص الأنشطة - المناطق الصناعية - القرار 104 </p>
+                </div>
+                <div class="logo-icon">🤖</div>
+            </div>
+            <p> مساعد يفهم أسئلتك ، ويزودك بمعلومات دقيقة عن الأنشطة الاستثمارية، المناطق الصناعية، حوافز القرار 104، والإجراءات المطلوبة.</p>
+        </header>
+
+        <!-- بطاقات المعلومات -->
+        <div class="info-grid">
+            <div class="info-card">
+                <h3><i class="fas fa-briefcase"></i> مجالات المساعدة</h3>
+                <ul>
+                    <li>الأنشطة الاستثمارية والتراخيص</li>
+                    <li>المناطق الصناعية ومواقعها</li>
+                    <li>حوافز القرار 104 والامتيازات</li>
+                    <li>الجهات المختصة والإجراءات</li>
+                    <li>متطلبات التراخيص والشروط</li>
+                    <li>التوجيه الاستثماري المتخصص</li>
+                </ul>
+            </div>
+            
+            <div class="info-card">
+                <h3><i class="fas fa-brain"></i> مميزات النظام</h3>
+                <ul>
+                    <li>فهم دلالي ذكي (لا يعتمد على الكلمات المفتاحية)</li>
+                    <li>معالجة متقدمة للغة العربية</li>
+                    <li>بحث متقاطع في 3 قواعد معرفية</li>
+                    <li>ذاكرة تعلم وتحسين مستمر</li>
+                    <li>واجهة صوتية وكتابية متكاملة</li>
+                    <li>تصدير واستيراد المعرفة</li>
+                </ul>
+            </div>
+            
+            <div class="info-card">
+                <h3><i class="fas fa-microphone-alt"></i> طرق التفاعل</h3>
+                <ul>
+                    <li>الكتابة المباشرة في حوار تفاعلي</li>
+                    <li>التحدث بالمايكرفون (تحويل صوت لنص)</li>
+                    <li>أسئلة مركبة (و، أو، ثم، مقارنات)</li>
+                    <li>أسئلة متتابعة مع فهم السياق</li>
+                    <li>طلبات محددة (المحافظة، القطاع، الجهة)</li>
+                    <li>تعديل وتصحيح المعلومات</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- إحصائيات النظام -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">538</div>
+                <div class="stat-label">سجل معرفي</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-number">3</div>
+                <div class="stat-label">قواعد بيانات</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-number">384</div>
+                <div class="stat-label">بُعد دلالي</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-number">5</div>
+                <div class="stat-label">نماذج نصية</div>
+            </div>
+        </div>
+
+        <!-- كيفية الاستخدام -->
+        <section class="usage-guide">
+            <h2>كيفية استخدام المساعد</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>اضغط على الأيقونة</h3>
+                    <p>ابحث عن الأيقونة العائمة في الزاوية وانقر عليها لفتح المساعد</p>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>اطرح سؤالك</h3>
+                    <p>اكتب سؤالك باللغة العربية أو انقر على المايك للتحدث</p>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>احصل على الإجابة</h3>
+                    <p>سيقوم المساعد بفهم سؤالك وإعطاء إجابة دقيقة وشاملة</p>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <h3>استمر في الحوار</h3>
+                    <p>يمكنك متابعة الأسئلة وسيتذكر المساعد سياق المحادثة</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- أمثلة على الأسئلة -->
+        <section class="usage-guide">
+            <h2>أمثلة على الأسئلة التي يمكنك طرحها</h2>
+            <div class="steps">
+                <div class="step">
+                    <h3>📋 الأنشطة</h3>
+                    <p>"ما هي متطلبات ترخيص مصنع ألبان؟"</p>
+                    <p>"أريد نشاط تصنيع منتجات بلاستيكية"</p>
+                </div>
+                
+                <div class="step">
+                    <h3>📍 المناطق</h3>
+                    <p>"اريد منطقة صناعية في المعادي"</p>
+                    <p>"ما هي المناطق الصناعية في القاهرة؟"</p>
+                </div>
+                
+                <div class="step">
+                    <h3>🎁 الحوافز</h3>
+                    <p>"ما هي حوافز القرار 104 للصناعات الغذائية؟"</p>
+                    <p>"هل نشاطي مؤهل للحوافز؟"</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- الفوتر -->
+        <footer class="footer">
+            <p>مساعد فريق اللجان</p>
+            <p>نظام  متخصص للجان</p>
+            <div class="version">الإصدار 2.0.0 | نظام بحث دلالي بالمتجهات</div>
+        </footer>
+    </div>
+
+    <!-- تلميح للواجهة العائمة -->
+    <div class="assistant-hint" id="assistantHint">
+        <i class="fas fa-robot"></i> انقر هنا لفتح المساعد الذكي
+    </div>
+
+    <!-- الملفات الأساسية للنظام -->
+    <!-- ملفات المعالجة اللغوية والأساسية -->
+    <script src="js/arabic-normalizer.js"></script>
+    <script src="js/vector-engine.js"></script>
+    <script src="js/intent-classifier.js"></script>
+    <script src="js/indexeddb-manager.js"></script>
+    <script src="js/query-parser.js"></script>
+    <script src="js/learning-system.js"></script>
+    <script src="js/response-generator.js"></script>
+    
+    <!-- ملفات قواعد البيانات (المشوشة) -->
+    <script src="js/activity_database-s.js"></script>
+    <script src="js/decision104_database-s.js"></script>
+    <script src="js/industrial_database-s.js"></script>
+    
+    <!-- ملفات المتجهات -->
+    <script src="data/activity_vectors.js"></script>
+    <script src="data/decision104_vectors.js"></script>
+    <script src="data/industrial_vectors.js"></script>
+    
+    <!-- النواة الرئيسية -->
+    <script src="js/ai-expert-core.js"></script>
+    
+    <!-- ملفات الواجهة -->
+    <script src="js/voice-handler.js"></script>
+    <script src="js/typewriter-effect.js"></script>
+    <script src="js/ui-controller.js"></script>
+    
+    <!-- ملف التهيئة الرئيسي -->
+    <script>
+        // تهيئة النظام عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 بدء تحميل نظام المساعد الذكي...');
+            
+            // إظهار تلميح المساعد بعد 3 ثواني
+            setTimeout(() => {
+                const hint = document.getElementById('assistantHint');
+                if (hint) {
+                    hint.style.display = 'block';
+                    setTimeout(() => {
+                        hint.style.display = 'none';
+                    }, 8000);
+                }
+            }, 3000);
+            
+            try {
+                // التحقق من توفر الملفات الأساسية
+                const requiredFiles = [
+                    'js/ai-expert-core.js',
+                    'js/arabic-normalizer.js',
+                    'js/vector-engine.js',
+                    'css/ai-assistant.css'
+                ];
+                
+                let allFilesLoaded = true;
+                for (const file of requiredFiles) {
+                    try {
+                        await fetch(file, { method: 'HEAD' });
+                    } catch {
+                        console.warn(`⚠️ ملف غير موجود: ${file}`);
+                        allFilesLoaded = false;
+                    }
+                }
+                
+                if (!allFilesLoaded) {
+                    console.warn('⚠️ بعض الملفات غير موجودة، قد لا يعمل النظام بشكل كامل');
+                }
+                
+                // عرض حالة التحميل
+                const loadingStates = [
+                    'جاري تحميل المعالج اللغوي...',
+                    'جاري تحميل محرك المتجهات...',
+                    'جاري تهيئة قواعد البيانات...',
+                    'جاري تحميل نظام التعلم...',
+                    'جاري تهيئة واجهة المستخدم...'
+                ];
+                
+                let currentState = 0;
+                const stateInterval = setInterval(() => {
+                    if (currentState < loadingStates.length) {
+                        console.log(`📦 ${loadingStates[currentState]}`);
+                        currentState++;
+                    } else {
+                        clearInterval(stateInterval);
+                        console.log('✅ تم تحميل النظام بنجاح');
+                        
+                        // إضافة رسالة ترحيبية في الكونسول
+                        console.log('%c🤖 مساعد اللجان جاهز للعمل!', 
+                            'color: #2ecc71; font-size: 16px; font-weight: bold;');
+                        console.log('%c💡 استخدم الأيقونة العائمة لبدء المحادثة', 
+                            'color: #3498db; font-size: 14px;');
+                    }
+                }, 500);
+                
+                // إضافة CSS للمساعد إذا لم يكن موجوداً
+                if (!document.querySelector('link[href="css/ai-assistant.css"]')) {
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        /* أنماط أساسية للمساعد */
+                        .ai-floating-icon {
+                            position: fixed;
+                            bottom: 30px;
+                            left: 30px;
+                            width: 70px;
+                            height: 70px;
+                            background: linear-gradient(135deg, #3498db, #2c3e50);
+                            border-radius: 50%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            color: white;
+                            font-size: 24px;
+                            cursor: pointer;
+                            z-index: 10000;
+                            box-shadow: 0 5px 20px rgba(52, 152, 219, 0.5);
+                            transition: all 0.3s ease;
+                        }
+                        
+                        .ai-floating-icon:hover {
+                            transform: scale(1.1);
+                            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.7);
+                        }
+                        
+                        .ai-floating-icon.panel-open {
+                            transform: scale(0.9);
+                            opacity: 0.7;
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+            } catch (error) {
+                console.error('❌ خطأ في تحميل النظام:', error);
+                alert('حدث خطأ في تحميل نظام المساعد. يرجى تحديث الصفحة.');
+            }
+        });
+        
+        // دالة مساعدة لتحميل الملفات بشكل متسلسل
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = () => resolve(src);
+                script.onerror = () => reject(new Error(`فشل تحميل الملف: ${src}`));
+                document.head.appendChild(script);
+            });
+        }
+        
+        // التحكم في التلميح
+        document.addEventListener('click', function() {
+            const hint = document.getElementById('assistantHint');
+            if (hint && hint.style.display === 'block') {
+                hint.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
