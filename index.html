@@ -4,29 +4,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <!-- حل بديل للمتصفحات القديمة -->
-  <script>
-    // التحميل المباشر لمكتبة Transformers
-    if (!window.transformers) {
-      console.log('🔧 تحميل مكتبة Transformers.js...');
-      var script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0/dist/transformers.min.js';
-      script.onload = function() {
-        console.log('✅ تم تحميل مكتبة Transformers.js');
-      };
-      document.head.appendChild(script);
-    }
-  </script>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>مساعد اللجان  - GAFI AI Assistant</title>
+  <title>مساعد اللجان الذكي - GAFI AI Assistant</title>
   
   <!-- CSS -->
   <link rel="stylesheet" href="css/ai-assistant.css">
   
-  <!-- تحميل Transformers.js أولاً في الـ Head -->
+  <!-- تحميل Transformers.js من UMD Build -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/transformers.js/2.6.0/transformers.min.js"></script>
   
+  <!-- بديل: إذا لم يعمل UMD، استخدم IIFE -->
+  <script>
+    // Fallback إذا فشل تحميل Transformers.js
+    window.transformers = window.transformers || {};
+    window.transformersFallbackLoaded = false;
+    
+    setTimeout(() => {
+      if (!window.transformers.pipeline && !window.transformersFallbackLoaded) {
+        console.warn('⚠️ تحميل Transformers.js فشل، تحميل نسخة بديلة...');
+        var fallbackScript = document.createElement('script');
+        fallbackScript.src = 'https://unpkg.com/@xenova/transformers@2.5.0/dist/transformers.min.js';
+        fallbackScript.onload = function() {
+          console.log('✅ تم تحميل النسخة البديلة');
+          window.transformersFallbackLoaded = true;
+        };
+        document.head.appendChild(fallbackScript);
+      }
+    }, 5000);
+  </script>
   
   <style>
     /* أساسيات الصفحة */
@@ -142,29 +146,49 @@
     (async function() {
       console.log('🚀 بدء تحميل نظام المساعد الذكي...');
 
-      // الانتظار حتى يتم تحميل Transformers.js أولاً
+      // الانتظار حتى يتم تحميل Transformers.js
       console.log('⏳ في انتظار تحميل مكتبة Transformers.js...');
       
-      await new Promise((resolve, reject) => {
+      await new Promise((resolve) => {
         let attempts = 0;
-        const maxAttempts = 50;
+        const maxAttempts = 60; // 30 ثانية كحد أقصى
         
         const checkInterval = setInterval(() => {
           attempts++;
           
-          if (window.transformers && window.transformers.pipeline) {
+          // التحقق بطرق مختلفة
+          const transformersLoaded = (
+            window.transformers?.pipeline ||
+            window.pipeline ||
+            window.transformersFallbackLoaded
+          );
+          
+          if (transformersLoaded) {
             clearInterval(checkInterval);
             console.log(`✅ تم تحميل Transformers.js بعد ${attempts} محاولات`);
             resolve();
           } else if (attempts >= maxAttempts) {
             clearInterval(checkInterval);
-            console.warn('⚠️ لم يتم تحميل Transformers.js، استخدام وضع Fallback');
-            resolve(); // لا نرفض، بل نستخدم وضع Fallback
+            console.warn('⚠️ لم يتم تحميل Transformers.js، استخدام وضع Fallback فقط');
+            console.log('ℹ️ البحث الدلالي لن يعمل، لكن النظام سيعمل بشكل أساسي');
+            resolve(); // نستمر حتى بدون Transformers
           } else if (attempts % 10 === 0) {
             console.log(`⏳ لا يزال في انتظار... (${attempts}/${maxAttempts})`);
+            console.log('   - window.transformers:', !!window.transformers);
+            console.log('   - pipeline:', !!window.transformers?.pipeline);
           }
-        }, 300);
+        }, 500);
       });
+
+      // بعد الانتظار، تحقق من الحالة النهائية
+      if (!window.transformers?.pipeline) {
+        console.warn('🚨 تحذير: Transformers.js غير محملة بشكل صحيح');
+        console.warn('📋 الحلول المقترحة:');
+        console.warn('   1. تحقق من اتصال الإنترنت');
+        console.warn('   2. جرب متصفحاً مختلفاً');
+        console.warn('   3. تأكد من عدم وجود حظر للمحتوى');
+        console.warn('   4. النظام سيستخدم وضع Fallback');
+      }
 
       try {
         // === المرحلة 1: تحميل قواعد البيانات ===
@@ -188,9 +212,16 @@
         
         const normalizer = new ArabicNormalizer();
         
-        // استخدام VectorEngineV7 بدلاً من VectorEngine
+        // استخدام VectorEngineV7
         const vectorEngine = new VectorEngineV7(normalizer);
-        await vectorEngine.initialize(); // تهيئة النموذج
+        
+        // محاولة تحميل النموذج (قد تفشل وتستخدم Fallback)
+        try {
+          await vectorEngine.initialize();
+        } catch (modelError) {
+          console.warn('⚠️ فشل تحميل نموذج المتجهات:', modelError.message);
+          console.log('📝 استخدام وضع Fallback للبحث النصي فقط');
+        }
         
         const intentClassifier = new IntentClassifier(normalizer, vectorEngine);
         const dbManager = new IndexedDBManager();
@@ -247,6 +278,13 @@
             console.log('   - إحصائيات AI:', aiCore.getStatistics());
             console.log('   - إحصائيات المتجهات:', vectorEngine.getStatistics());
             console.log('   - إحصائيات التعلم:', learningSystem.getStatistics());
+            console.log('   - Transformers محملة:', !!window.transformers?.pipeline);
+          },
+          reloadTransformers: async () => {
+            console.log('🔄 إعادة تحميل Transformers.js...');
+            if (window.transformersLoader) {
+              await window.transformersLoader.reload();
+            }
           }
         };
 
@@ -257,6 +295,18 @@
         console.log('🎉 ════════════════════════════════════════');
         console.log('✅ المساعد الذكي جاهز للعمل!');
         console.log('🎉 ════════════════════════════════════════');
+        console.log('');
+        
+        // عرض حالة Transformers
+        if (window.transformers?.pipeline) {
+          console.log('🚀 Transformers.js: محملة ✅');
+          console.log('🔍 البحث الدلالي: نشط');
+        } else {
+          console.log('⚠️ Transformers.js: غير محملة ❌');
+          console.log('🔍 البحث الدلالي: غير نشط (وضع Fallback)');
+          console.log('💡 الحل: اكتب aiAssistant.reloadTransformers() للمحاولة مرة أخرى');
+        }
+        
         console.log('');
         console.log('💡 يمكنك الآن:');
         console.log('   • الضغط على الأيقونة العائمة لبدء المحادثة');
@@ -272,9 +322,22 @@
           <div style="color: white; text-align: center;">
             <h2 style="color: #ef4444; margin-bottom: 20px;">❌ خطأ في التحميل</h2>
             <p style="margin-bottom: 20px;">${error.message}</p>
+            <div style="margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+              <h4 style="margin-bottom: 10px;">🔄 الحلول المقترحة:</h4>
+              <ol style="text-align: right; margin-right: 20px;">
+                <li>تحديث الصفحة (F5)</li>
+                <li>استخدام متصفح Chrome أو Firefox</li>
+                <li>تعطيل مانع الإعلانات مؤقتاً</li>
+                <li>التأكد من اتصال الإنترنت</li>
+              </ol>
+            </div>
             <button onclick="location.reload()" 
-                    style="padding: 12px 24px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
+                    style="padding: 12px 24px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 10px;">
               🔄 إعادة المحاولة
+            </button>
+            <button onclick="window.aiAssistant?.reloadTransformers?.()" 
+                    style="padding: 12px 24px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 10px;">
+              🔧 إعادة تحميل النموذج
             </button>
           </div>
         `;
@@ -284,5 +347,3 @@
 
 </body>
 </html>
-
-
