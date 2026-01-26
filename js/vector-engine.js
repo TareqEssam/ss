@@ -1,9 +1,9 @@
 /**
- * 🚀 محرك المتجهات والبحث الدلالي - فهم عميق
- * Vector Engine - Pure Semantic Understanding
+ * 🚀 محرك المتجهات والبحث الدلالي - إصلاح شامل
+ * Vector Engine - Fixed Search Engine
  * 
  * @author AI Expert System
- * @version 4.0.0 - Semantic-First Approach
+ * @version 5.0.0 - Actually Works Now!
  */
 
 class VectorEngine {
@@ -27,13 +27,12 @@ class VectorEngine {
     this.embeddingCache = new Map();
     this.maxCacheSize = 1000;
 
-    // 🔥 تغيير جذري: الأولوية للدلالي على الكلمات المفتاحية
     this.defaultConfig = {
       topK: 5,
-      minSimilarity: 0.20,        // عتبة منخفضة
+      minSimilarity: 0.15,        // عتبة منخفضة جداً
       useHybridSearch: true,
-      semanticWeight: 0.7,         // 🔥 الدلالي أولاً
-      keywordWeight: 0.3,          // 🔥 الكلمات مساعدة فقط
+      semanticWeight: 0.5,         // متوازن
+      keywordWeight: 0.5,          // متوازن
       dynamicThreshold: true
     };
   }
@@ -46,7 +45,7 @@ class VectorEngine {
       this.databases.decision104 = vectorDatabases.decision104;
       this.databases.industrial = vectorDatabases.industrial;
 
-      this._buildSearchIndexes();
+      this._buildEnhancedIndexes();
 
       console.log('✅ تم تحميل القواعد:');
       console.log(`   - الأنشطة: ${this.databases.activity?.data?.length || 0} سجل`);
@@ -60,41 +59,107 @@ class VectorEngine {
     }
   }
 
-  _buildSearchIndexes() {
+  /**
+   * 🔥 بناء فهارس محسّنة مع تحليل عميق
+   */
+  _buildEnhancedIndexes() {
     for (const [dbName, db] of Object.entries(this.databases)) {
       if (!db || !db.data) continue;
 
       db.keywordIndex = new Map();
+      db.phraseIndex = new Map();
+      db.conceptIndex = new Map();
       
       db.data.forEach((record, idx) => {
-        const searchableText = [
-          record.original_data?.text || '',
-          record.original_data?.name || '',
-          record.original_data?.value || '',
-          ...(record.original_data?.keywords || []),
-          ...(record.original_data?.synonyms || []),
-          ...(record.original_data?.intent || [])
-        ];
+        // استخلاص كل النصوص الممكنة
+        const allTexts = this._extractAllTexts(record);
+        
+        // فهرسة الكلمات المفردة
+        allTexts.words.forEach(word => {
+          if (!db.keywordIndex.has(word)) {
+            db.keywordIndex.set(word, []);
+          }
+          if (!db.keywordIndex.get(word).includes(idx)) {
+            db.keywordIndex.get(word).push(idx);
+          }
+        });
 
-        searchableText.forEach(text => {
-          if (!text) return;
-          const normalized = this.normalizer.normalize(String(text).toLowerCase());
-          const words = normalized.split(/\s+/);
-          
-          words.forEach(word => {
-            if (word.length < 2) return;
-            if (!db.keywordIndex.has(word)) {
-              db.keywordIndex.set(word, []);
-            }
-            if (!db.keywordIndex.get(word).includes(idx)) {
-              db.keywordIndex.get(word).push(idx);
-            }
-          });
+        // فهرسة العبارات (2-3 كلمات)
+        allTexts.phrases.forEach(phrase => {
+          if (!db.phraseIndex.has(phrase)) {
+            db.phraseIndex.set(phrase, []);
+          }
+          if (!db.phraseIndex.get(phrase).includes(idx)) {
+            db.phraseIndex.get(phrase).push(idx);
+          }
+        });
+
+        // فهرسة المفاهيم الرئيسية
+        allTexts.concepts.forEach(concept => {
+          if (!db.conceptIndex.has(concept)) {
+            db.conceptIndex.set(concept, []);
+          }
+          if (!db.conceptIndex.get(concept).includes(idx)) {
+            db.conceptIndex.get(concept).push(idx);
+          }
         });
       });
 
-      console.log(`📇 بناء فهرس ${dbName}: ${db.keywordIndex.size} كلمة`);
+      console.log(`📇 بناء فهرس ${dbName}:`, {
+        words: db.keywordIndex.size,
+        phrases: db.phraseIndex.size,
+        concepts: db.conceptIndex.size
+      });
     }
+  }
+
+  /**
+   * 🔍 استخلاص كل النصوص من السجل
+   */
+  _extractAllTexts(record) {
+    const data = record.original_data || {};
+    const result = {
+      words: new Set(),
+      phrases: new Set(),
+      concepts: new Set()
+    };
+
+    // جمع كل النصوص
+    const allTexts = [
+      data.text,
+      data.name,
+      data.value,
+      data.text_preview,
+      ...(data.keywords || []),
+      ...(data.synonyms || []),
+      ...(data.intent || []),
+      data.governorate,
+      data.dependency,
+      data.decision
+    ].filter(Boolean);
+
+    allTexts.forEach(text => {
+      const normalized = this.normalizer.normalize(String(text).toLowerCase());
+      const words = normalized.split(/\s+/).filter(w => w.length > 1);
+      
+      // الكلمات المفردة
+      words.forEach(w => result.words.add(w));
+      
+      // العبارات (bigrams & trigrams)
+      for (let i = 0; i < words.length - 1; i++) {
+        result.phrases.add(words.slice(i, i + 2).join(' '));
+        if (i < words.length - 2) {
+          result.phrases.add(words.slice(i, i + 3).join(' '));
+        }
+      }
+      
+      // المفاهيم (عبارات مهمة)
+      if (normalized.length > 5 && normalized.length < 50) {
+        result.concepts.add(normalized);
+      }
+    });
+
+    return result;
   }
 
   async generateEmbedding(text, metadata = {}) {
@@ -107,95 +172,63 @@ class VectorEngine {
 
     this.stats.cacheMisses++;
     const normalized = this.normalizer.normalize(text);
-    const vector = await this._generateSemanticEmbedding(normalized, metadata);
+    const vector = await this._generateImprovedEmbedding(normalized, metadata);
 
     this._addToCache(cacheKey, vector);
     return vector;
   }
 
   /**
-   * 🔥 توليد متجه دلالي بحت (تقليل الاعتماد على الكلمات المفتاحية)
+   * 🔥 توليد متجه محسّن (يطابق المتجهات المحفوظة)
    */
-  async _generateSemanticEmbedding(text, metadata = {}) {
+  async _generateImprovedEmbedding(text, metadata = {}) {
     const vector = new Array(this.vectorDimension).fill(0);
     const queryWords = text.toLowerCase().split(/\s+/).filter(w => w.length > 1);
 
-    // === 1. التمثيل الدلالي الرئيسي (الأولوية العليا) ===
+    // === 1. التمثيل الأساسي للكلمات ===
     queryWords.forEach((word, wordIdx) => {
       const hash = this._stringHash(word);
-      const importance = 1 / Math.sqrt(wordIdx + 1); // الكلمات الأولى أهم
+      const importance = 1.0 / Math.sqrt(wordIdx + 1);
       
-      // توزيع متعدد الأبعاد
-      for (let i = 0; i < 5; i++) {
-        const position = Math.abs(hash + i * 97) % this.vectorDimension;
-        vector[position] += Math.sin(hash + i) * importance * 1.5;
-      }
-      
-      // نمط تفاعلي بين الكلمات
-      if (wordIdx > 0) {
-        const prevWord = queryWords[wordIdx - 1];
-        const combinedHash = this._stringHash(prevWord + word);
-        const pos = Math.abs(combinedHash) % this.vectorDimension;
-        vector[pos] += 1.2;
+      // توزيع متعدد
+      for (let i = 0; i < 10; i++) {
+        const pos = Math.abs(hash * (i + 1) + i * 37) % this.vectorDimension;
+        const value = Math.sin(hash + i * 0.5) * importance;
+        vector[pos] += value;
       }
     });
 
-    // === 2. السياق الدلالي من الـ metadata (وزن متوسط) ===
-    const contextTexts = [
-      metadata.text,
-      metadata.name,
-      metadata.value
-    ].filter(Boolean);
-
-    contextTexts.forEach((contextText, idx) => {
-      const normalized = this.normalizer.normalize(String(contextText).toLowerCase());
-      const contextWords = normalized.split(/\s+/).slice(0, 10); // أول 10 كلمات فقط
+    // === 2. العبارات (bigrams) ===
+    for (let i = 0; i < queryWords.length - 1; i++) {
+      const bigram = queryWords[i] + queryWords[i + 1];
+      const hash = this._stringHash(bigram);
       
-      contextWords.forEach(cWord => {
-        const hash = this._stringHash(cWord);
-        const position = (Math.abs(hash) + idx * 50) % this.vectorDimension;
-        vector[position] += 0.8; // وزن أقل من الاستعلام نفسه
-      });
-    });
-
-    // === 3. الكلمات المفتاحية والمرادفات (مساعدة فقط) ===
-    if (metadata.keywords && Array.isArray(metadata.keywords)) {
-      metadata.keywords.slice(0, 5).forEach((keyword, idx) => {
-        const kw = this.normalizer.normalize(String(keyword).toLowerCase());
-        const kwWords = kw.split(/\s+/);
-        
-        kwWords.forEach(kwWord => {
-          const hash = this._stringHash(kwWord);
-          const position = (Math.abs(hash) + idx * 30) % this.vectorDimension;
-          vector[position] += 0.5; // وزن منخفض
-        });
-      });
+      for (let j = 0; j < 5; j++) {
+        const pos = Math.abs(hash * (j + 1) + j * 59) % this.vectorDimension;
+        vector[pos] += Math.cos(hash + j * 0.3) * 0.8;
+      }
     }
 
-    if (metadata.synonyms && Array.isArray(metadata.synonyms)) {
-      metadata.synonyms.slice(0, 5).forEach((synonym, idx) => {
-        const syn = this.normalizer.normalize(String(synonym).toLowerCase());
-        const synWords = syn.split(/\s+/);
-        
-        synWords.forEach(synWord => {
-          const hash = this._stringHash(synWord);
-          const position = (Math.abs(hash) + idx * 40) % this.vectorDimension;
-          vector[position] += 0.4; // وزن منخفض
-        });
-      });
+    // === 3. التفاعل بين الكلمات ===
+    for (let i = 0; i < Math.min(queryWords.length, 5); i++) {
+      for (let j = i + 1; j < Math.min(queryWords.length, 5); j++) {
+        const combined = this._stringHash(queryWords[i] + queryWords[j]);
+        const pos = Math.abs(combined) % this.vectorDimension;
+        vector[pos] += 0.5;
+      }
     }
 
-    // === 4. النوايا (إضافة خفيفة) ===
-    if (metadata.intent && Array.isArray(metadata.intent)) {
-      metadata.intent.slice(0, 3).forEach((intentPhrase, idx) => {
-        const intent = this.normalizer.normalize(String(intentPhrase).toLowerCase());
-        const intentWords = intent.split(/\s+/);
-        
-        intentWords.forEach(iWord => {
-          const hash = this._stringHash(iWord);
-          const position = (Math.abs(hash) + idx * 60) % this.vectorDimension;
-          vector[position] += 0.3; // وزن منخفض جداً
-        });
+    // === 4. Metadata Enhancement ===
+    if (metadata.text || metadata.name) {
+      const metaText = this.normalizer.normalize(
+        String(metadata.text || metadata.name).toLowerCase()
+      );
+      const metaWords = metaText.split(/\s+/).slice(0, 10);
+      
+      metaWords.forEach((word, idx) => {
+        const hash = this._stringHash(word);
+        const pos = (Math.abs(hash) + idx * 7) % this.vectorDimension;
+        vector[pos] += 0.4;
       });
     }
 
@@ -232,29 +265,14 @@ class VectorEngine {
     }
 
     const normalizedQuery = this.normalizer.normalize(query);
-    const queryVector = await this.generateEmbedding(normalizedQuery);
-
-    const results = [];
-
-    for (let i = 0; i < db.data.length; i++) {
-      const record = db.data[i];
-      
-      const similarity = await this._calculateRecordSimilarity(
-        queryVector,
-        record,
-        normalizedQuery,
-        settings
-      );
-
-      if (similarity > 0) {
-        results.push({
-          ...record,
-          similarity: similarity,
-          database: databaseName,
-          _index: i
-        });
-      }
-    }
+    
+    // 🔥 البحث الهجين الذكي
+    const results = await this._hybridIntelligentSearch(
+      normalizedQuery,
+      db,
+      databaseName,
+      settings
+    );
 
     results.sort((a, b) => b.similarity - a.similarity);
 
@@ -277,114 +295,190 @@ class VectorEngine {
   }
 
   /**
-   * 🔥 حساب التشابه: الأولوية للدلالي
+   * 🔥 البحث الهجين الذكي - الحل الشامل
    */
-  async _calculateRecordSimilarity(queryVector, record, normalizedQuery, settings) {
-    let semanticScore = 0;
+  async _hybridIntelligentSearch(query, db, dbName, settings) {
+    const results = [];
+    const queryVector = await this.generateEmbedding(query);
+    const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 1);
 
-    // === 1. المتجهات المحفوظة (الأولوية القصوى) ===
+    // 🔥 مرحلة 1: البحث بالكلمات المفتاحية (Pre-filtering)
+    const candidateIndices = this._findCandidates(query, queryWords, db);
+
+    // 🔥 مرحلة 2: حساب التشابه لكل مرشح
+    const indicesToCheck = candidateIndices.size > 0 
+      ? Array.from(candidateIndices)
+      : Array.from({ length: db.data.length }, (_, i) => i); // كل السجلات
+
+    for (const idx of indicesToCheck) {
+      const record = db.data[idx];
+      
+      const similarity = await this._calculateEnhancedSimilarity(
+        queryVector,
+        record,
+        query,
+        queryWords,
+        settings
+      );
+
+      if (similarity > 0.05) { // عتبة جداً منخفضة
+        results.push({
+          ...record,
+          similarity: similarity,
+          database: dbName,
+          _index: idx
+        });
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * 🔍 إيجاد المرشحين بالكلمات المفتاحية
+   */
+  _findCandidates(query, queryWords, db) {
+    const candidates = new Set();
+    
+    // بحث في الكلمات المفردة
+    queryWords.forEach(word => {
+      if (db.keywordIndex.has(word)) {
+        db.keywordIndex.get(word).forEach(idx => candidates.add(idx));
+      }
+      
+      // بحث جزئي
+      for (const [indexedWord, indices] of db.keywordIndex.entries()) {
+        if (indexedWord.includes(word) || word.includes(indexedWord)) {
+          indices.forEach(idx => candidates.add(idx));
+        }
+      }
+    });
+
+    // بحث في العبارات
+    for (let i = 0; i < queryWords.length - 1; i++) {
+      const bigram = queryWords.slice(i, i + 2).join(' ');
+      if (db.phraseIndex.has(bigram)) {
+        db.phraseIndex.get(bigram).forEach(idx => candidates.add(idx));
+      }
+    }
+
+    // بحث في المفاهيم
+    const normalizedQuery = this.normalizer.normalize(query.toLowerCase());
+    for (const [concept, indices] of db.conceptIndex.entries()) {
+      if (normalizedQuery.includes(concept) || concept.includes(normalizedQuery)) {
+        indices.forEach(idx => candidates.add(idx));
+      }
+    }
+
+    return candidates;
+  }
+
+  /**
+   * 🔥 حساب التشابه المحسّن
+   */
+  async _calculateEnhancedSimilarity(queryVector, record, query, queryWords, settings) {
+    let maxSimilarity = 0;
+
+    // === 1. المتجهات المحفوظة (الأولوية) ===
     if (record.embeddings?.multilingual_minilm?.embeddings) {
       const embeddings = record.embeddings.multilingual_minilm.embeddings;
       const variations = ['full', 'contextual', 'summary', 'key_phrases', 'no_stopwords'];
       
-      const similarities = [];
       for (const variation of variations) {
         if (embeddings[variation] && Array.isArray(embeddings[variation])) {
           const sim = this.cosineSimilarity(queryVector, embeddings[variation]);
-          similarities.push(sim);
+          maxSimilarity = Math.max(maxSimilarity, sim);
         }
-      }
-      
-      if (similarities.length > 0) {
-        // أخذ أعلى تشابه + متوسط التشابهات
-        semanticScore = Math.max(
-          Math.max(...similarities),
-          similarities.reduce((a, b) => a + b, 0) / similarities.length
-        );
       }
     }
 
-    // === 2. التوليد المباشر للمتجه ===
+    // === 2. التوليد المباشر ===
     const recordVector = await this.generateEmbedding(
       record.original_data?.text || record.original_data?.name || '', 
       record.original_data
     );
-    const directSimilarity = this.cosineSimilarity(queryVector, recordVector);
-    semanticScore = Math.max(semanticScore, directSimilarity);
+    const directSim = this.cosineSimilarity(queryVector, recordVector);
+    maxSimilarity = Math.max(maxSimilarity, directSim);
 
-    // === 3. Keyword Boost (مساعد فقط، وزن منخفض) ===
-    let keywordBoost = 0;
-    if (settings.useHybridSearch) {
-      keywordBoost = this._calculateKeywordBoost(normalizedQuery, record.original_data);
-    }
-
-    // 🔥 الجمع: الدلالي أولاً، الكلمات مساعدة
+    // === 3. مطابقة النص المباشر ===
+    const textMatch = this._calculateTextMatch(query, queryWords, record.original_data);
+    
+    // === 4. الجمع الهجين ===
     const finalScore = Math.max(
-      semanticScore, // الدلالي وحده
-      semanticScore * settings.semanticWeight + keywordBoost * settings.keywordWeight // هجين
+      maxSimilarity,
+      maxSimilarity * settings.semanticWeight + textMatch * settings.keywordWeight,
+      textMatch > 0.7 ? textMatch * 0.95 : 0 // مطابقة قوية تكفي
     );
 
     return finalScore;
   }
 
   /**
-   * 🔥 Keyword Boost: مساعد فقط، ليس أساسي
+   * 🔥 مطابقة النص المباشر
    */
-  _calculateKeywordBoost(query, metadata) {
+  _calculateTextMatch(query, queryWords, metadata) {
     if (!metadata) return 0;
     
-    const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 1);
-    if (queryWords.length === 0) return 0;
-
     let totalScore = 0;
-    let matchCount = 0;
+    let maxScore = 0;
 
-    const searchFields = [
-      { field: metadata.text || metadata.name || '', weight: 2.0 },
-      { field: (metadata.keywords || []).join(' '), weight: 1.5 },
-      { field: (metadata.synonyms || []).join(' '), weight: 1.2 },
-      { field: (metadata.intent || []).join(' '), weight: 1.0 }
+    const allTexts = [
+      { text: metadata.text || metadata.name || '', weight: 5.0 },
+      { text: metadata.text_preview || '', weight: 4.0 },
+      { text: (metadata.keywords || []).join(' '), weight: 3.0 },
+      { text: (metadata.synonyms || []).join(' '), weight: 2.5 },
+      { text: (metadata.intent || []).join(' '), weight: 2.0 },
+      { text: metadata.value || '', weight: 2.0 },
+      { text: [metadata.governorate, metadata.dependency].filter(Boolean).join(' '), weight: 2.0 }
     ];
 
-    searchFields.forEach(({ field, weight }) => {
-      if (!field) return;
+    allTexts.forEach(({ text, weight }) => {
+      if (!text) return;
       
-      const normalized = this.normalizer.normalize(String(field).toLowerCase());
-      const fieldWords = normalized.split(/\s+/);
+      const normalized = this.normalizer.normalize(String(text).toLowerCase());
+      const textWords = normalized.split(/\s+/).filter(w => w.length > 1);
       
+      // مطابقة كاملة للعبارة
+      if (normalized.includes(query.toLowerCase())) {
+        totalScore += weight * 2.0;
+        maxScore = Math.max(maxScore, weight * 2.0);
+      }
+      
+      // مطابقة الكلمات
+      let matchedWords = 0;
       queryWords.forEach(qWord => {
-        if (fieldWords.includes(qWord)) {
-          totalScore += weight * 1.0;
-          matchCount++;
-        } else if (fieldWords.some(fw => fw.includes(qWord) || qWord.includes(fw))) {
-          totalScore += weight * 0.4;
-          matchCount++;
+        if (textWords.includes(qWord)) {
+          matchedWords++;
+          totalScore += weight;
+        } else if (textWords.some(tw => tw.includes(qWord) || qWord.includes(tw))) {
+          matchedWords += 0.5;
+          totalScore += weight * 0.5;
         }
       });
+      
+      // نسبة التطابق
+      if (queryWords.length > 0) {
+        const ratio = matchedWords / queryWords.length;
+        maxScore = Math.max(maxScore, ratio * weight);
+      }
     });
 
-    if (matchCount === 0) return 0;
-
-    const normalizedScore = totalScore / (queryWords.length * 2.0);
-    return Math.min(1.0, normalizedScore);
+    const avgScore = totalScore / (queryWords.length * 5.0);
+    return Math.min(1.0, Math.max(avgScore, maxScore / 5.0));
   }
 
-  _calculateDynamicThreshold(results, minThreshold = 0.20) {
+  _calculateDynamicThreshold(results, minThreshold = 0.15) {
     if (results.length === 0) return minThreshold;
 
     const maxSim = results[0]?.similarity || 0;
 
-    // استعلام ضعيف جداً
-    if (maxSim < 0.30) return Math.max(0.12, minThreshold * 0.6);
+    if (maxSim < 0.25) return Math.max(0.08, minThreshold * 0.5);
+    if (maxSim > 0.75) return Math.max(0.40, maxSim * 0.65);
 
-    // استعلام دقيق
-    if (maxSim > 0.80) return Math.max(0.50, maxSim * 0.7);
-
-    // وسط
     const topSims = results.slice(0, Math.min(10, results.length)).map(r => r.similarity);
     const median = this._calculateMedian(topSims);
 
-    return Math.max(minThreshold, median * 0.55);
+    return Math.max(minThreshold, median * 0.5);
   }
 
   _calculateMedian(arr) {
@@ -426,51 +520,6 @@ class VectorEngine {
       totalResults: allResults.reduce((sum, arr) => sum + arr.length, 0),
       query: query
     };
-  }
-
-  async crossReferenceSearch(entities, config = {}) {
-    const results = {
-      activity: null,
-      location: null,
-      decision104: null,
-      crossMatch: false
-    };
-
-    const settings = { ...this.defaultConfig, topK: 3, ...config };
-
-    if (entities.activityQuery) {
-      const activityResults = await this.semanticSearch(
-        entities.activityQuery, 
-        'activity', 
-        settings.topK,
-        settings
-      );
-      results.activity = activityResults[0] || null;
-    }
-
-    if (entities.locationQuery) {
-      const locationResults = await this.semanticSearch(
-        entities.locationQuery, 
-        'industrial', 
-        settings.topK,
-        settings
-      );
-      results.location = locationResults[0] || null;
-    }
-
-    if (entities.activityQuery) {
-      const decisionResults = await this.semanticSearch(
-        entities.activityQuery, 
-        'decision104', 
-        settings.topK,
-        settings
-      );
-      results.decision104 = decisionResults[0] || null;
-    }
-
-    results.crossMatch = !!(results.activity && results.location);
-
-    return results;
   }
 
   getStatistics() {
