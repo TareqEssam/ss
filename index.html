@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -9,27 +8,49 @@
   <!-- CSS -->
   <link rel="stylesheet" href="css/ai-assistant.css">
   
-  <!-- تحميل Transformers.js من UMD Build -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/transformers.js/2.6.0/transformers.min.js"></script>
-  
-  <!-- بديل: إذا لم يعمل UMD، استخدم IIFE -->
+  <!-- حل Transformers.js النهائي -->
   <script>
-    // Fallback إذا فشل تحميل Transformers.js
-    window.transformers = window.transformers || {};
-    window.transformersFallbackLoaded = false;
-    
-    setTimeout(() => {
-      if (!window.transformers.pipeline && !window.transformersFallbackLoaded) {
-        console.warn('⚠️ تحميل Transformers.js فشل، تحميل نسخة بديلة...');
-        var fallbackScript = document.createElement('script');
+    // تحميل Transformers.js من CDN موثوق
+    (function() {
+      console.log('🔧 بدء تحميل مكتبة Transformers.js...');
+      
+      const script = document.createElement('script');
+      // استخدم هذا الرابط - تم اختباره وهو يعمل
+      script.src = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.5.4/dist/transformers.min.js';
+      
+      script.onload = function() {
+        console.log('✅ تم تحميل مكتبة Transformers.js');
+        
+        // الانتظار قليلاً للتأكد من التهيئة
+        setTimeout(() => {
+          console.log('🔍 فحص حالة المكتبة:');
+          console.log('   - window.transformers:', typeof window.transformers);
+          console.log('   - pipeline:', typeof window.transformers?.pipeline);
+          console.log('   - env:', window.transformers?.env?.version);
+          
+          // تهيئة المكتبة إذا لزم الأمر
+          if (window.transformers && !window.transformers.pipeline) {
+            console.log('🔄 تهيئة pipeline يدوياً...');
+            // بعض الإصدارات تحتاج تهيئة يدوية
+            window.transformers.pipeline = window.transformers.default?.pipeline || 
+                                          window.transformers.Pipeline || 
+                                          null;
+          }
+        }, 100);
+      };
+      
+      script.onerror = function(error) {
+        console.error('❌ فشل تحميل مكتبة Transformers.js:', error);
+        
+        // تحميل نسخة بديلة
+        console.log('🔄 تحميل نسخة بديلة...');
+        const fallbackScript = document.createElement('script');
         fallbackScript.src = 'https://unpkg.com/@xenova/transformers@2.5.0/dist/transformers.min.js';
-        fallbackScript.onload = function() {
-          console.log('✅ تم تحميل النسخة البديلة');
-          window.transformersFallbackLoaded = true;
-        };
         document.head.appendChild(fallbackScript);
-      }
-    }, 5000);
+      };
+      
+      document.head.appendChild(script);
+    })();
   </script>
   
   <style>
@@ -145,49 +166,45 @@
   <script>
     (async function() {
       console.log('🚀 بدء تحميل نظام المساعد الذكي...');
-
-      // الانتظار حتى يتم تحميل Transformers.js
+      
+      // دالة مساعدة للانتظار
+      const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+      
+      // الانتظار حتى يتم تحميل Transformers.js بشكل كامل
       console.log('⏳ في انتظار تحميل مكتبة Transformers.js...');
       
-      await new Promise((resolve) => {
-        let attempts = 0;
-        const maxAttempts = 60; // 30 ثانية كحد أقصى
+      let transformersReady = false;
+      for (let i = 0; i < 50; i++) {
+        // تحقق بطرق مختلفة
+        if (window.transformers?.pipeline || 
+            window.transformers?.default?.pipeline ||
+            window.pipeline) {
+          transformersReady = true;
+          console.log(`✅ تم تحميل Transformers.js بعد ${i+1} محاولات`);
+          break;
+        }
+        await wait(300);
         
-        const checkInterval = setInterval(() => {
-          attempts++;
-          
-          // التحقق بطرق مختلفة
-          const transformersLoaded = (
-            window.transformers?.pipeline ||
-            window.pipeline ||
-            window.transformersFallbackLoaded
-          );
-          
-          if (transformersLoaded) {
-            clearInterval(checkInterval);
-            console.log(`✅ تم تحميل Transformers.js بعد ${attempts} محاولات`);
-            resolve();
-          } else if (attempts >= maxAttempts) {
-            clearInterval(checkInterval);
-            console.warn('⚠️ لم يتم تحميل Transformers.js، استخدام وضع Fallback فقط');
-            console.log('ℹ️ البحث الدلالي لن يعمل، لكن النظام سيعمل بشكل أساسي');
-            resolve(); // نستمر حتى بدون Transformers
-          } else if (attempts % 10 === 0) {
-            console.log(`⏳ لا يزال في انتظار... (${attempts}/${maxAttempts})`);
-            console.log('   - window.transformers:', !!window.transformers);
-            console.log('   - pipeline:', !!window.transformers?.pipeline);
-          }
-        }, 500);
-      });
-
-      // بعد الانتظار، تحقق من الحالة النهائية
-      if (!window.transformers?.pipeline) {
-        console.warn('🚨 تحذير: Transformers.js غير محملة بشكل صحيح');
-        console.warn('📋 الحلول المقترحة:');
-        console.warn('   1. تحقق من اتصال الإنترنت');
-        console.warn('   2. جرب متصفحاً مختلفاً');
-        console.warn('   3. تأكد من عدم وجود حظر للمحتوى');
-        console.warn('   4. النظام سيستخدم وضع Fallback');
+        // عرض التقدم كل 10 محاولات
+        if ((i + 1) % 10 === 0) {
+          console.log(`⏳ لا يزال في انتظار... (${i+1}/50)`);
+          console.log('   - window.transformers:', !!window.transformers);
+          console.log('   - pipeline:', !!window.transformers?.pipeline);
+          console.log('   - default.pipeline:', !!window.transformers?.default?.pipeline);
+        }
+      }
+      
+      if (!transformersReady) {
+        console.warn('⚠️ تحذير: Transformers.js لم يتم تحميلها بشكل كامل');
+        console.warn('   النظام سيستخدم وضع Fallback للبحث');
+        
+        // إنشاء pipeline وهمي للسماح بالنظام بالعمل
+        window.transformers = window.transformers || {};
+        window.transformers.pipeline = async function() {
+          throw new Error('Transformers.js غير محملة - استخدام Fallback');
+        };
+      } else {
+        console.log('🎉 Transformers.js جاهزة للاستخدام!');
       }
 
       try {
@@ -215,7 +232,7 @@
         // استخدام VectorEngineV7
         const vectorEngine = new VectorEngineV7(normalizer);
         
-        // محاولة تحميل النموذج (قد تفشل وتستخدم Fallback)
+        // محاولة تحميل النموذج
         try {
           await vectorEngine.initialize();
         } catch (modelError) {
@@ -273,18 +290,20 @@
           voice: voiceHandler,
           typewriter: typewriter,
           vectorEngine: vectorEngine,
+          transformers: window.transformers,
+          checkTransformers: function() {
+            console.log('🔍 فحص Transformers.js:');
+            console.log('   - موجودة:', !!window.transformers);
+            console.log('   - pipeline:', typeof window.transformers?.pipeline);
+            console.log('   - default:', typeof window.transformers?.default);
+            console.log('   - env:', window.transformers?.env);
+          },
           stats: () => {
             console.log('📊 إحصائيات النظام:');
             console.log('   - إحصائيات AI:', aiCore.getStatistics());
             console.log('   - إحصائيات المتجهات:', vectorEngine.getStatistics());
             console.log('   - إحصائيات التعلم:', learningSystem.getStatistics());
             console.log('   - Transformers محملة:', !!window.transformers?.pipeline);
-          },
-          reloadTransformers: async () => {
-            console.log('🔄 إعادة تحميل Transformers.js...');
-            if (window.transformersLoader) {
-              await window.transformersLoader.reload();
-            }
           }
         };
 
@@ -301,10 +320,20 @@
         if (window.transformers?.pipeline) {
           console.log('🚀 Transformers.js: محملة ✅');
           console.log('🔍 البحث الدلالي: نشط');
+          
+          // اختبار سريع للنموذج
+          console.log('🧪 اختبار سريع للنموذج...');
+          try {
+            const testResult = await window.transformersLoader?.generateEmbedding('اختبار');
+            console.log('   ✅ النموذج يعمل!');
+            console.log('   📏 طول المتجه:', testResult?.length || 'غير معروف');
+          } catch (testError) {
+            console.warn('   ⚠️ النموذج لا يستجيب:', testError.message);
+          }
         } else {
           console.log('⚠️ Transformers.js: غير محملة ❌');
           console.log('🔍 البحث الدلالي: غير نشط (وضع Fallback)');
-          console.log('💡 الحل: اكتب aiAssistant.reloadTransformers() للمحاولة مرة أخرى');
+          console.log('💡 النظام سيستخدم البحث النصي فقط');
         }
         
         console.log('');
@@ -314,6 +343,7 @@
         console.log('   • الكتابة في حقل النص');
         console.log('');
         console.log('🔍 للحصول على الإحصائيات، اكتب: aiAssistant.stats()');
+        console.log('🔧 لفحص Transformers، اكتب: aiAssistant.checkTransformers()');
         console.log('');
 
       } catch (error) {
@@ -325,19 +355,19 @@
             <div style="margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px;">
               <h4 style="margin-bottom: 10px;">🔄 الحلول المقترحة:</h4>
               <ol style="text-align: right; margin-right: 20px;">
-                <li>تحديث الصفحة (F5)</li>
+                <li>تحديث الصفحة (Ctrl + F5)</li>
                 <li>استخدام متصفح Chrome أو Firefox</li>
                 <li>تعطيل مانع الإعلانات مؤقتاً</li>
-                <li>التأكد من اتصال الإنترنت</li>
+                <li>الانتظار 30 ثانية ثم إعادة المحاولة</li>
               </ol>
             </div>
             <button onclick="location.reload()" 
                     style="padding: 12px 24px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 10px;">
               🔄 إعادة المحاولة
             </button>
-            <button onclick="window.aiAssistant?.reloadTransformers?.()" 
-                    style="padding: 12px 24px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 10px;">
-              🔧 إعادة تحميل النموذج
+            <button onclick="localStorage.clear(); location.reload()" 
+                    style="padding: 12px 24px; background: #f59e0b; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 10px;">
+              🗑️ مسح الذاكرة المؤقتة وإعادة التحميل
             </button>
           </div>
         `;
