@@ -732,151 +732,43 @@ class UIController {
       if (saved) {
         const state = JSON.parse(saved);
         
-        if (state.isMuted !== undefined) {
-          this.isMuted = state.isMuted;
-          if (this.isMuted) {
-            const unmutedIcon = this.elements.muteButton?.querySelector('.icon-unmuted');
-            const mutedIcon = this.elements.muteButton?.querySelector('.icon-muted');
-            if (unmutedIcon && mutedIcon) {
-              unmutedIcon.style.display = 'none';
-              mutedIcon.style.display = 'block';
-              this.elements.muteButton?.classList.add('muted');
-            }
-          }
-        }
-
-        if (state.isOpen) {
-          setTimeout(() => this.openPanel(), 500);
-        }
-
-        if (state.messages && state.messages.length > 0) {
-          // إعادة تحميل الرسائل المحفوظة
-          for (const msg of state.messages) {
-            await this.addMessage(msg.content, msg.sender);
-          }
+        if (state.isMuted) {
+          this.toggleMute();
         }
       }
     } catch (error) {
-      console.error('❌ خطأ في تحميل الحالة المحفوظة:', error);
+      console.error('خطأ في تحميل الحالة:', error);
     }
   }
 
   /**
-   * 🏗️ إنشاء الأيقونة العائمة (واجهة عامة)
+   * 🧹 تنظيف
    */
-  createFloatingIcon() {
-    this._createFloatingIcon();
-  }
+  destroy() {
 
-  /**
-   * ✅ فتح المساعد (واجهة عامة)
-   */
-  openAssistant() {
-    this.openPanel();
-  }
+// إيقاف الصوت
 
-  /**
-   * ❌ إغلاق المساعد (واجهة عامة)
-   */
-  closeAssistant() {
-    this.closePanel();
-  }
+if (this.voiceHandler) {
 
-  /**
-   * 🎤 تبديل الميكروفون (واجهة عامة)
-   */
-  toggleMicrophone() {
-    this.toggleVoice();
-  }
+this.voiceHandler.destroy();
 
-  /**
-   * 🔇 تبديل الكتم (واجهة عامة)
-   */
-  toggleMute() {
-    this.toggleMute();
-  }
-
-  /**
-   * 💬 عرض رسالة (واجهة عامة)
-   */
-  displayMessage(text, isUser) {
-    this.addMessage(text, isUser ? 'user' : 'assistant');
-  }
-
-  /**
-   * ⌨️ إظهار مؤشر الكتابة (واجهة عامة)
-   */
-  showTypingIndicator() {
-    this.showTypingIndicator();
-  }
-
-  /**
-   * 🚫 إخفاء مؤشر الكتابة (واجهة عامة)
-   */
-  hideTypingIndicator() {
-    this.hideTypingIndicator();
-  }
-
-  /**
-   * 🎭 جعل الأيقونة قابلة للسحب (واجهة عامة)
-   */
-  makeIconDraggable() {
-    this._makeDraggable(this.elements.floatingIcon);
-  }
-
-  /**
-   * 🎨 تحديث حالة الواجهة
-   */
-  updateUIState() {
-    // تحديث النص الحالة
-    const statusText = this.elements.assistantPanel?.querySelector('.status-text');
-    if (statusText) {
-      if (this.voiceHandler?.isListening) {
-        statusText.textContent = 'جاري الاستماع...';
-      } else {
-        statusText.textContent = 'جاهز للمساعدة';
-      }
-    }
-  }
-
-  /**
-   * 🔄 إعادة تعيين الواجهة
-   */
-  resetUI() {
-    this.isOpen = false;
-    this.isMuted = false;
-    
-    if (this.elements.assistantPanel) {
-      this.elements.assistantPanel.style.display = 'none';
-    }
-    
-    if (this.elements.floatingIcon) {
-      this.elements.floatingIcon.classList.remove('panel-open');
-    }
-    
-    // مسح المحادثة
-    this.clearChat();
-  }
-
-  /**
-   * 🎛️ تحديث الإعدادات
-   */
-  updateSettings(settings) {
-    if (settings.enableVoice !== undefined) {
-      this.config.enableVoice = settings.enableVoice;
-    }
-    
-    if (settings.enableTypewriter !== undefined) {
-      this.config.enableTypewriter = settings.enableTypewriter;
-    }
-    
-    if (settings.maxMessages !== undefined) {
-      this.config.maxMessages = settings.maxMessages;
-    }
-  }
+}
+  // إيقاف الكتابة
+if (this.typewriter) {
+  this.typewriter.stop();
 }
 
-// تصدير الفئة للاستخدام في الملفات الأخرى
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = UIController;
+// حفظ الحالة
+this._saveState();
+
+// حذف العناصر
+if (this.elements.floatingIcon) {
+  this.elements.floatingIcon.remove();
+}
+if (this.elements.assistantPanel) {
+  this.elements.assistantPanel.remove();
+}
+
+console.log('🧹 تم تنظيف الواجهة');
+}
 }
