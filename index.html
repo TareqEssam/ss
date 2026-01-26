@@ -1,180 +1,245 @@
-/**
- * 🤖 محمل Transformers.js - نموذج متجهات حقيقي
- * Real Embedding Model Loader
- * 
- * استخدام نموذج حقيقي للمتجهات في المتصفح
- * 
- * @version 1.1.0
- */
-
-class TransformersLoader {
-  constructor() {
-    this.pipeline = null;
-    this.model = null;
-    this.tokenizer = null;
-    this.isLoading = false;
-    this.isLoaded = false;
-    this.loadError = null;
-  }
-
-  /**
-   * 🚀 تحميل نموذج Transformers.js
-   */
-  async load() {
-    if (this.isLoaded) {
-      return { success: true, model: this.pipeline };
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مساعد اللجان الذكي - GAFI AI Assistant</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/ai-assistant.css">
+  
+  <style>
+    /* أساسيات الصفحة */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-
-    if (this.isLoading) {
-      console.log('⏳ النموذج قيد التحميل...');
-      return new Promise((resolve) => {
-        const checkInterval = setInterval(() => {
-          if (this.isLoaded) {
-            clearInterval(checkInterval);
-            resolve({ success: true, model: this.pipeline });
-          } else if (this.loadError) {
-            clearInterval(checkInterval);
-            resolve({ success: false, error: this.loadError });
-          }
-        }, 500);
-      });
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
     }
-
-    this.isLoading = true;
-
-    try {
-      console.log('📦 بدء تحميل نموذج المتجهات...');
-
-      // انتظار تحميل مكتبة Transformers.js
-      await this._waitForTransformers();
-
-      console.log('✅ تم تحميل مكتبة transformers.js');
-      console.log('🔄 تهيئة النموذج...');
-
-      // استخدام النموذج المناسب
-      const { pipeline } = window.transformers;
-      
-      this.pipeline = await pipeline(
-        'feature-extraction',
-        'Xenova/paraphrase-multilingual-MiniLM-L12-v2',
-        {
-          quantized: true, // استخدام النموذج المضغوط للسرعة
-          progress_callback: (progress) => {
-            if (progress.status === 'progress') {
-              console.log(`⏳ التحميل: ${progress.file} - ${Math.round(progress.progress || 0)}%`);
-            }
-          }
-        }
-      );
-
-      this.isLoaded = true;
-      this.isLoading = false;
-      
-      console.log('✅ تم تحميل نموذج المتجهات بنجاح!');
-      
-      return { success: true, model: this.pipeline };
-
-    } catch (error) {
-      console.error('❌ فشل تحميل النموذج:', error);
-      this.loadError = error;
-      this.isLoading = false;
-      
-      return { 
-        success: false, 
-        error: error.message,
-        fallback: true 
-      };
+    
+    .main-content {
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
     }
-  }
+    
+    .header {
+      text-align: center;
+      padding: 40px 20px;
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: white;
+      border-radius: 16px;
+      margin-bottom: 30px;
+    }
+    
+    .header h1 {
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+    
+    .header p {
+      opacity: 0.9;
+      font-size: 1.1em;
+    }
+    
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      flex-direction: column;
+    }
+    
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    .loading-text {
+      color: white;
+      margin-top: 20px;
+      font-size: 18px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
 
-  /**
-   * ⏳ الانتظار حتى يتم تحميل Transformers.js
-   */
-  async _waitForTransformers() {
-    return new Promise((resolve, reject) => {
-      // إذا كانت المكتبة موجودة بالفعل
-      if (window.transformers && window.transformers.pipeline) {
-        console.log('📚 مكتبة Transformers.js محملة مسبقًا');
-        resolve();
-        return;
-      }
+  <!-- شاشة التحميل -->
+  <div id="loading-screen">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">جاري تحميل المساعد الذكي...</div>
+  </div>
 
-      console.log('⏳ في انتظار تحميل مكتبة Transformers.js...');
-      
-      let attempts = 0;
-      const maxAttempts = 30; // 30 محاولة × 500ms = 15 ثانية كحد أقصى
-      
-      const checkInterval = setInterval(() => {
-        attempts++;
+  <!-- المحتوى الرئيسي -->
+  <div class="main-content">
+    <div class="header">
+      <h1>🤖 مساعد اللجان الذكي</h1>
+      <p>مستشار خبير للهيئة العامة للاستثمار والمناطق الحرة</p>
+    </div>
+  </div>
+
+  <!-- الأيقونة العائمة والواجهة سيتم إنشاؤها تلقائياً -->
+
+  <!-- المكتبات الخارجية -->
+  <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2"></script>
+
+  <!-- المكونات الأساسية -->
+  <script src="js/arabic-normalizer.js"></script>
+  <script src="js/transformers-loader.js"></script>
+  <script src="js/vector-engine-v7.js"></script>
+  <script src="js/intent-classifier.js"></script>
+  <script src="js/indexeddb-manager.js"></script>
+  <script src="js/query-parser.js"></script>
+  <script src="js/learning-system.js"></script>
+  <script src="js/response-generator.js"></script>
+
+  <!-- النواة الرئيسية -->
+  <script src="js/ai-expert-core.js"></script>
+
+  <!-- مكونات الواجهة -->
+  <script src="js/voice-handler.js"></script>
+  <script src="js/typewriter-effect.js"></script>
+  <script src="js/ui-controller.js"></script>
+
+  <!-- التهيئة والتشغيل -->
+  <script type="module">
+    (async function() {
+      console.log('🚀 بدء تحميل نظام المساعد الذكي...');
+
+      try {
+        // === المرحلة 1: تحميل قواعد البيانات ===
+        console.log('📦 تحميل قواعد البيانات...');
         
-        if (window.transformers && window.transformers.pipeline) {
-          clearInterval(checkInterval);
-          console.log(`✅ تم تحميل Transformers.js بعد ${attempts} محاولات`);
-          resolve();
-        } else if (attempts >= maxAttempts) {
-          clearInterval(checkInterval);
-          reject(new Error('انتهت مهلة انتظار تحميل Transformers.js. تأكد من اتصال الإنترنت.'));
-        } else if (attempts % 5 === 0) {
-          console.log(`⏳ لا يزال في انتظار Transformers.js... (المحاولة ${attempts}/${maxAttempts})`);
-        }
-      }, 500);
-    });
-  }
+        const [activityVectors, decision104Vectors, industrialVectors] = await Promise.all([
+          import('./data/activity_vectors.js'),
+          import('./data/decision104_vectors.js'),
+          import('./data/industrial_vectors.js')
+        ]);
 
-  /**
-   * 🔢 توليد متجه من نص
-   */
-  async generateEmbedding(text) {
-    if (!this.isLoaded) {
-      const loadResult = await this.load();
-      if (!loadResult.success) {
-        throw new Error('النموذج غير محمل');
+        // حفظ في window للوصول المباشر
+        window.activityVectors = activityVectors.default;
+        window.decision104Vectors = decision104Vectors.default;
+        window.industrialVectors = industrialVectors.default;
+
+        console.log('✅ تم تحميل قواعد البيانات');
+
+        // === المرحلة 2: تهيئة المكونات ===
+        console.log('🔧 تهيئة المكونات الأساسية...');
+        
+        const normalizer = new ArabicNormalizer();
+        
+        // استخدام VectorEngineV7 بدلاً من VectorEngine
+        const vectorEngine = new VectorEngineV7(normalizer);
+        await vectorEngine.initialize(); // تهيئة النموذج
+        
+        const intentClassifier = new IntentClassifier(normalizer, vectorEngine);
+        const dbManager = new IndexedDBManager();
+        const learningSystem = new LearningSystem(dbManager, normalizer);
+        const queryParser = new QueryParser(normalizer, intentClassifier);
+        const responseGenerator = new ResponseGenerator();
+        const voiceHandler = new VoiceHandler();
+        const typewriter = new TypewriterEffect();
+        
+        console.log('✅ تم تهيئة جميع المكونات');
+
+        // === المرحلة 3: تهيئة النواة الرئيسية ===
+        console.log('🧠 تهيئة النواة الرئيسية...');
+        
+        const aiCore = new AIExpertCore();
+        aiCore.normalizer = normalizer;
+        aiCore.vectorEngine = vectorEngine;
+        aiCore.intentClassifier = intentClassifier;
+        aiCore.dbManager = dbManager;
+        aiCore.learningSystem = learningSystem;
+        aiCore.queryParser = queryParser;
+        
+        aiCore.vectorDatabases = {
+          activity: window.activityVectors,
+          decision104: window.decision104Vectors,
+          industrial: window.industrialVectors
+        };
+        
+        await aiCore.initialize();
+        console.log('✅ النواة الرئيسية جاهزة');
+
+        // === المرحلة 4: تهيئة الواجهة ===
+        console.log('🎨 تهيئة واجهة المستخدم...');
+        
+        const uiController = new UIController(
+          aiCore,
+          voiceHandler,
+          typewriter,
+          responseGenerator
+        );
+        
+        await uiController.initialize();
+        console.log('✅ الواجهة جاهزة');
+
+        // === حفظ في window ===
+        window.aiAssistant = {
+          core: aiCore,
+          ui: uiController,
+          voice: voiceHandler,
+          typewriter: typewriter,
+          vectorEngine: vectorEngine,
+          stats: () => {
+            console.log('📊 إحصائيات النظام:');
+            console.log('   - إحصائيات AI:', aiCore.getStatistics());
+            console.log('   - إحصائيات المتجهات:', vectorEngine.getStatistics());
+            console.log('   - إحصائيات التعلم:', learningSystem.getStatistics());
+          }
+        };
+
+        // إخفاء شاشة التحميل
+        document.getElementById('loading-screen').style.display = 'none';
+
+        console.log('');
+        console.log('🎉 ════════════════════════════════════════');
+        console.log('✅ المساعد الذكي جاهز للعمل!');
+        console.log('🎉 ════════════════════════════════════════');
+        console.log('');
+        console.log('💡 يمكنك الآن:');
+        console.log('   • الضغط على الأيقونة العائمة لبدء المحادثة');
+        console.log('   • استخدام المايك للتحدث مباشرة');
+        console.log('   • الكتابة في حقل النص');
+        console.log('');
+        console.log('🔍 للحصول على الإحصائيات، اكتب: aiAssistant.stats()');
+        console.log('');
+
+      } catch (error) {
+        console.error('❌ فشل تحميل النظام:', error);
+        document.getElementById('loading-screen').innerHTML = `
+          <div style="color: white; text-align: center;">
+            <h2 style="color: #ef4444; margin-bottom: 20px;">❌ خطأ في التحميل</h2>
+            <p style="margin-bottom: 20px;">${error.message}</p>
+            <button onclick="location.reload()" 
+                    style="padding: 12px 24px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
+              🔄 إعادة المحاولة
+            </button>
+          </div>
+        `;
       }
-    }
+    })();
+  </script>
 
-    try {
-      const output = await this.pipeline(text, {
-        pooling: 'mean',
-        normalize: true
-      });
-
-      // استخراج المتجه
-      const embedding = Array.from(output.data);
-      return embedding;
-
-    } catch (error) {
-      console.error('❌ خطأ في توليد المتجه:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * 📊 الحصول على الحالة
-   */
-  getStatus() {
-    return {
-      isLoaded: this.isLoaded,
-      isLoading: this.isLoading,
-      hasError: !!this.loadError,
-      error: this.loadError?.message
-    };
-  }
-
-  /**
-   * 🔄 إعادة تحميل النموذج
-   */
-  async reload() {
-    this.isLoaded = false;
-    this.isLoading = false;
-    this.loadError = null;
-    this.pipeline = null;
-    return this.load();
-  }
-}
-
-// Singleton
-window.transformersLoader = window.transformersLoader || new TransformersLoader();
-
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = TransformersLoader;
-}
+</body>
+</html>
