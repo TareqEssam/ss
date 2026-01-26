@@ -284,6 +284,75 @@ async _handleStatisticalQuery(query, classification) {
 }
 
   /**
+ * 📊 تحليل النتائج الإحصائية - نسخة محسّنة
+ */
+_analyzeStatisticalResults(results, query, classification) {
+  const analysis = {
+    total: 0,
+    byGovernorate: {},
+    byAuthority: {},
+    byType: {},
+    bySector: {},
+    topResults: [],
+    databases: {}
+  };
+
+  // تحليل المناطق الصناعية
+  if (results.industrial && results.industrial.length > 0) {
+    analysis.databases.industrial = results.industrial.length;
+    
+    results.industrial.forEach(record => {
+      const data = record.original_data;
+      
+      if (data.governorate) {
+        analysis.byGovernorate[data.governorate] = 
+          (analysis.byGovernorate[data.governorate] || 0) + 1;
+      }
+
+      if (data.dependency) {
+        analysis.byAuthority[data.dependency] = 
+          (analysis.byAuthority[data.dependency] || 0) + 1;
+      }
+
+      analysis.total++;
+    });
+
+    analysis.topResults = results.industrial
+      .filter(r => r.similarity > 0.25)
+      .slice(0, 10)
+      .map(r => ({
+        ...r.original_data,
+        confidence: r.similarity
+      }));
+  }
+
+  // تحليل الأنشطة
+  if (results.activity && results.activity.length > 0) {
+    analysis.databases.activity = results.activity.length;
+    analysis.total += results.activity.filter(r => r.similarity > 0.30).length;
+  }
+
+  // تحليل القرار 104
+  if (results.decision104 && results.decision104.length > 0) {
+    analysis.databases.decision104 = results.decision104.length;
+    
+    results.decision104.forEach(record => {
+      const preview = record.original_data.text_preview || '';
+      
+      if (preview.includes('sectorA') || preview.includes('القطاع أ')) {
+        analysis.bySector['قطاع أ'] = (analysis.bySector['قطاع أ'] || 0) + 1;
+      } else if (preview.includes('sectorB') || preview.includes('القطاع ب')) {
+        analysis.bySector['قطاع ب'] = (analysis.bySector['قطاع ب'] || 0) + 1;
+      }
+    });
+
+    analysis.total += results.decision104.filter(r => r.similarity > 0.25).length;
+  }
+
+  return analysis;
+}
+
+  /**
  * 🆚 معالجة السؤال المقارن - نسخة محسّنة
  */
 async _handleComparativeQuery(query, classification) {
@@ -354,6 +423,7 @@ async _handleComparativeQuery(query, classification) {
     }))
   };
 }
+
   /**
  * 🔗 معالجة السؤال المتقاطع - نسخة محسّنة
  */
@@ -492,8 +562,7 @@ async _handleSimpleQuery(query, classification) {
   };
 }
 
-
-  /**
+/**
  * 🧠 توليد رسالة خطأ ذكية (بدلاً من "عذراً لم أجد")
  */
 _generateIntelligentError(query, classification, queryType) {
@@ -575,6 +644,8 @@ _generateCrossReferenceHelp(partialResults) {
 
   return help;
 }
+
+
   /**
    * 📝 تنسيق الإجابة البسيطة
    */
@@ -713,50 +784,58 @@ _generateCrossReferenceHelp(partialResults) {
     return answer;
   }
 
-  /**
-   * 📊 تنسيق الإجابة الإحصائية
-   */
-  _formatStatisticalAnswer(analysis, query) {
-    let answer = `بناءً على البيانات المتاحة:\n\n`;
+ /**
+ * 📝 تنسيق الإجابة الإحصائية - نسخة محسّنة
+ */
+_formatStatisticalAnswer(analysis, query) {
+  let answer = `بناءً على البحث في قواعد البيانات:\n\n`;
 
-    answer += `📊 **الإحصائيات العامة:**\n`;
-    answer += `- إجمالي النتائج: **${analysis.total}**\n\n`;
+  answer += `📊 **الإجمالي: ${analysis.total}**\n\n`;
 
-    // حسب المحافظة
-    if (Object.keys(analysis.byGovernorate).length > 0) {
-      answer += `🗺️ **التوزيع حسب المحافظة:**\n`;
-      const sorted = Object.entries(analysis.byGovernorate)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5);
-      
-      sorted.forEach(([gov, count]) => {
-        answer += `- ${gov}: ${count} منطقة\n`;
-      });
-      answer += `\n`;
-    }
-
-    // حسب التبعية
-    if (Object.keys(analysis.byAuthority).length > 0) {
-      answer += `🏛️ **التوزيع حسب جهة الولاية:**\n`;
-      Object.entries(analysis.byAuthority).forEach(([auth, count]) => {
-        answer += `- ${auth}: ${count} منطقة\n`;
-      });
-      answer += `\n`;
-    }
-
-    // حسب النوع (للقرار 104)
-    if (Object.keys(analysis.byType).length > 0) {
-      answer += `📋 **التوزيع حسب القطاع:**\n`;
-      Object.entries(analysis.byType).forEach(([type, count]) => {
-        answer += `- ${type}: ${count} نشاط\n`;
-      });
-      answer += `\n`;
-    }
-
-    answer += `💡 هل تريد تفاصيل أكثر عن منطقة أو محافظة معينة؟`;
-
-    return answer;
+  // التوزيع الجغرافي
+  if (Object.keys(analysis.byGovernorate).length > 0) {
+    answer += `🗺️ **التوزيع الجغرافي:**\n`;
+    const sorted = Object.entries(analysis.byGovernorate)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10);
+    
+    sorted.forEach(([gov, count]) => {
+      answer += `   • ${gov}: ${count}\n`;
+    });
+    answer += `\n`;
   }
+
+  // جهات الولاية
+  if (Object.keys(analysis.byAuthority).length > 0) {
+    answer += `🏛️ **جهات الولاية:**\n`;
+    Object.entries(analysis.byAuthority)
+      .sort((a, b) => b[1] - a[1])
+      .forEach(([auth, count]) => {
+        answer += `   • ${auth}: ${count}\n`;
+      });
+    answer += `\n`;
+  }
+
+  // القطاعات
+  if (Object.keys(analysis.bySector).length > 0) {
+    answer += `📋 **التوزيع حسب القطاع:**\n`;
+    Object.entries(analysis.bySector).forEach(([sector, count]) => {
+      answer += `   • ${sector}: ${count}\n`;
+    });
+    answer += `\n`;
+  }
+
+  // أمثلة
+  if (analysis.topResults.length > 0) {
+    answer += `💼 **أمثلة:**\n`;
+    analysis.topResults.slice(0, 3).forEach((item, idx) => {
+      const name = item.name || item.text || 'غير محدد';
+      answer += `   ${idx + 1}. ${name.substring(0, 80)}...\n`;
+    });
+  }
+
+  return answer;
+}
 
   /**
    * 🆚 تنسيق إجابة المقارنة
@@ -1235,5 +1314,4 @@ async _saveAllData() {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = AIExpertCore;
 }
-
 
