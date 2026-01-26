@@ -441,3 +441,4 @@ class VectorEngineV7 {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = VectorEngineV7;
 }
+
