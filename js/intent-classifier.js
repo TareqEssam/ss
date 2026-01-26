@@ -1,9 +1,9 @@
 /**
- * 🎯 مصنف النوايا الذكي - النسخة المُصلحة
- * Intent Classifier - Fixed Version
+ * 🎯 مصنف النوايا الذكي - فهم دلالي عميق
+ * Intent Classifier - Deep Semantic Understanding
  * 
  * @author AI Expert System
- * @version 3.0.0 - Fixed
+ * @version 4.0.0 - Semantic Intent Understanding
  */
 
 class IntentClassifier {
@@ -11,13 +11,14 @@ class IntentClassifier {
     this.normalizer = arabicNormalizer;
     this.vectorEngine = vectorEngine;
 
+    // 🔥 أنماط النوايا الدلالية (بدون كلمات مفتاحية صريحة)
     this.intentPatterns = {
       legal: {
         semantic: ['قانون', 'ترخيص', 'رخصة', 'تصريح', 'سجل', 'اشتراطات', 'متطلبات', 'جهة', 'وزارة', 'هيئة', 'مستندات', 'أوراق'],
         weight: 1.0
       },
       geographic: {
-        semantic: ['منطقة', 'موقع', 'مكان', 'محافظة', 'مدينة', 'قرية', 'حي', 'خريطة', 'موجود', 'تابع', 'عنوان'],
+        semantic: ['منطقة', 'موقع', 'مكان', 'محافظة', 'مدينة', 'قرية', 'حي', 'خريطة', 'موجود', 'تابع', 'عنوان', 'صناعية', 'صناعي'],
         weight: 1.0
       },
       technical: {
@@ -42,6 +43,35 @@ class IntentClassifier {
       }
     };
 
+    // 🔥 مفاهيم دلالية للقواعد (ما يميز كل قاعدة)
+    this.databaseSemantics = {
+      industrial: {
+        concepts: [
+          'منطقة صناعية', 'مناطق صناعية', 'منطقة', 'مناطق',
+          'موقع', 'مواقع', 'أرض', 'أراضي', 'مدينة صناعية',
+          'محافظة', 'تبعية', 'جهاز', 'هيئة عمرانية', 'مساحة',
+          'إحداثيات', 'خريطة', 'موجود', 'تابع', 'صناعي', 'صناعية'
+        ],
+        weight: 1.0
+      },
+      activity: {
+        concepts: [
+          'نشاط', 'أنشطة', 'مشروع', 'مشاريع', 'ترخيص', 'رخصة',
+          'تصريح', 'اشتراطات', 'متطلبات', 'إجراءات', 'فني', 'قانوني',
+          'مستندات', 'أوراق', 'جهة مختصة', 'سجل', 'فتح', 'تأسيس'
+        ],
+        weight: 1.0
+      },
+      decision104: {
+        concepts: [
+          'حوافز', 'قرار 104', 'قرار', 'دعم', 'إعفاء', 'تخفيض',
+          'مزايا', 'قطاع أ', 'قطاع ب', 'تسهيلات', 'ضريبة',
+          'رسوم', 'أرض', 'مرافق', 'توصيل', 'استثمار'
+        ],
+        weight: 1.0
+      }
+    };
+
     this.queryTypes = {
       SIMPLE: 'simple',
       COMPLEX: 'complex',
@@ -58,19 +88,17 @@ class IntentClassifier {
       authorities: []
     };
 
-    // 🔥 قائمة موسعة للأنشطة الشائعة
     this.commonActivities = [
       'فندق', 'مصنع', 'مطعم', 'مقهى', 'كافيه', 'محل', 'شركة', 'مكتب',
       'مخبز', 'صيدلية', 'عيادة', 'مستشفى', 'مدرسة', 'حضانة', 'روضة',
       'ورشة', 'معمل', 'قرية سياحية', 'منتجع', 'ريزورت', 'كومباوند',
-      'سوبر ماركت', 'هايبر ماركت', 'مول', 'محطة وقود', 'غسيل سيارات',
-      'صالون', 'حلاق', 'جيم', 'نادي', 'ملعب', 'مركز تدريب', 'أكاديمية',
-      'يخت', 'مركب', 'باخرة', 'غوص', 'نقل سياحي', 'كهرباء', 'طاقة',
-      'مصنع', 'ورشة', 'معمل', 'وحدة إنتاج', 'خط إنتاج', 'تصنيع',
-      'مخزن', 'مستودع', 'سوق', 'معرض', 'صالة عرض'
+      'سوبر ماركت', 'هايبر ماركت', 'مول', 'محطة وقود', 'غسيل سيارات'
     ];
   }
 
+  /**
+   * 🎯 التصنيف الرئيسي - فهم دلالي عميق
+   */
   async classifyIntent(query) {
     const normalized = this.normalizer.normalize(query);
     
@@ -81,34 +109,20 @@ class IntentClassifier {
       queryType: this.queryTypes.SIMPLE,
       entities: {},
       requiresCrossReference: false,
-      suggestedDatabases: []
+      suggestedDatabases: [],
+      semanticScores: {} // 🔥 درجات الفهم الدلالي
     };
 
-    // 1. استخلاص الكيانات أولاً (مهم جداً!)
+    // 1. استخلاص الكيانات
     classification.entities = this._extractQueryEntities(normalized);
 
-    // 2. حساب نقاط النوايا
+    // 2. حساب نقاط النوايا (الطريقة القديمة)
     const intentScores = this._calculateIntentScores(normalized);
 
-    // 🔥 3. تعزيز النوايا بناءً على الكيانات المستخلصة
-    if (classification.entities.activities.length > 0) {
-      intentScores.activity = Math.max(intentScores.activity || 0, 0.75);
-      // إذا كان السؤال عن نشاط محدد، النية القانونية قوية أيضاً
-      if (/ترخيص|رخصة|تصريح|مستندات|أوراق|إجراءات/.test(normalized)) {
-        intentScores.legal = Math.max(intentScores.legal || 0, 0.7);
-      }
-    }
+    // 🔥 3. حساب التطابق الدلالي مع كل قاعدة بيانات
+    classification.semanticScores = await this._calculateDatabaseSemanticScores(normalized);
 
-    if (classification.entities.locations.length > 0 || 
-        classification.entities.governorates.length > 0) {
-      intentScores.geographic = Math.max(intentScores.geographic || 0, 0.7);
-    }
-
-    if (classification.entities.sectors.length > 0 || /قرار|104|حوافز/.test(normalized)) {
-      intentScores.incentive = Math.max(intentScores.incentive || 0, 0.7);
-    }
-
-    // 4. ترتيب النوايا
+    // 4. تحديد النية الرئيسية
     const sortedIntents = Object.entries(intentScores)
       .sort((a, b) => b[1] - a[1])
       .filter(([_, score]) => score > 0);
@@ -133,10 +147,155 @@ class IntentClassifier {
       classification.queryType
     );
 
-    // 7. اقتراح القواعد المناسبة
-    classification.suggestedDatabases = this._suggestDatabasesEnhanced(classification);
+    // 🔥 7. اختيار القواعد بناءً على الفهم الدلالي (الأهم!)
+    classification.suggestedDatabases = this._suggestDatabasesSemanticBased(
+      classification,
+      normalized
+    );
 
     return classification;
+  }
+
+  /**
+   * 🔥 حساب التطابق الدلالي مع كل قاعدة بيانات
+   */
+  async _calculateDatabaseSemanticScores(normalizedQuery) {
+    const scores = {
+      industrial: 0,
+      activity: 0,
+      decision104: 0
+    };
+
+    const queryWords = normalizedQuery.split(/\s+/).filter(w => w.length > 1);
+
+    for (const [dbName, dbData] of Object.entries(this.databaseSemantics)) {
+      let matchScore = 0;
+      let conceptMatches = 0;
+
+      // حساب التطابق مع المفاهيم
+      dbData.concepts.forEach(concept => {
+        const conceptWords = this.normalizer.normalize(concept).split(/\s+/);
+        
+        // تطابق كامل للعبارة
+        if (normalizedQuery.includes(concept)) {
+          matchScore += 5.0;
+          conceptMatches++;
+        }
+        // تطابق كلمات المفهوم
+        else {
+          const matches = conceptWords.filter(cw => 
+            queryWords.some(qw => qw === cw || qw.includes(cw) || cw.includes(qw))
+          );
+          
+          if (matches.length > 0) {
+            const ratio = matches.length / conceptWords.length;
+            matchScore += ratio * 2.0;
+            conceptMatches++;
+          }
+        }
+      });
+
+      // تطبيع النتيجة
+      if (conceptMatches > 0) {
+        scores[dbName] = Math.min(1.0, matchScore / dbData.concepts.length);
+      }
+    }
+
+    return scores;
+  }
+
+  /**
+   * 🔥 اختيار القواعد بناءً على الفهم الدلالي
+   */
+  _suggestDatabasesSemanticBased(classification, normalizedQuery) {
+    const databases = new Set();
+
+    // 🔥 الأولوية للتطابق الدلالي
+    const semanticScores = classification.semanticScores;
+    const sortedBySemantics = Object.entries(semanticScores)
+      .sort((a, b) => b[1] - a[1])
+      .filter(([_, score]) => score > 0.15); // عتبة منخفضة للسماح بالمرونة
+
+    // حالة خاصة: الأسئلة الإحصائية
+    if (classification.queryType === this.queryTypes.STATISTICAL) {
+      // 🔥 إذا كان التطابق الدلالي واضح
+      if (sortedBySemantics.length > 0 && sortedBySemantics[0][1] > 0.4) {
+        // إضافة القاعدة الأعلى تطابقاً
+        databases.add(sortedBySemantics[0][0]);
+        
+        // إضافة قواعد أخرى إذا كان تطابقها قوي أيضاً
+        sortedBySemantics.slice(1).forEach(([db, score]) => {
+          if (score > sortedBySemantics[0][1] * 0.5) {
+            databases.add(db);
+          }
+        });
+      } else {
+        // السلوك الافتراضي للإحصائيات: جميع القواعد
+        return ['industrial', 'activity', 'decision104'];
+      }
+      
+      return Array.from(databases);
+    }
+
+    // الحالات العادية: استخدام التطابق الدلالي + الكيانات
+    if (sortedBySemantics.length > 0) {
+      // إضافة القاعدة الأعلى تطابقاً
+      databases.add(sortedBySemantics[0][0]);
+      
+      // إضافة قواعد أخرى قريبة من الأعلى
+      sortedBySemantics.slice(1, 2).forEach(([db, score]) => {
+        if (score > 0.3) {
+          databases.add(db);
+        }
+      });
+    }
+
+    // تعزيز بناءً على الكيانات المستخلصة
+    if (classification.entities.activities.length > 0) {
+      databases.add('activity');
+      databases.add('decision104');
+    }
+
+    if (classification.entities.locations.length > 0 || 
+        classification.entities.governorates.length > 0) {
+      databases.add('industrial');
+    }
+
+    if (classification.entities.sectors.length > 0 || 
+        /حوافز|قرار|104/.test(normalizedQuery)) {
+      databases.add('decision104');
+    }
+
+    // تعزيز بناءً على النية
+    if (classification.primaryIntent === 'legal' || 
+        classification.primaryIntent === 'activity') {
+      databases.add('activity');
+    }
+
+    if (classification.primaryIntent === 'geographic') {
+      databases.add('industrial');
+    }
+
+    if (classification.primaryIntent === 'incentive') {
+      databases.add('decision104');
+    }
+
+    // 🔥 حالة خاصة: "منطقة صناعية" يجب أن تذهب لـ industrial
+    if (/منطق[ةه]?\s*صناعي[ةه]?|مناطق\s*صناعي[ةه]?|صناعي[ةه]?\s*منطق[ةه]?/i.test(normalizedQuery)) {
+      databases.clear();
+      databases.add('industrial');
+    }
+
+    // افتراضي إذا لم نجد شيء
+    if (databases.size === 0) {
+      if (sortedBySemantics.length > 0) {
+        databases.add(sortedBySemantics[0][0]);
+      } else {
+        databases.add('activity');
+      }
+    }
+
+    return Array.from(databases);
   }
 
   _calculateIntentScores(normalizedQuery) {
@@ -169,23 +328,19 @@ class IntentClassifier {
   }
 
   _detectQueryType(normalizedQuery, entities) {
-    // إحصائي
     if (/\b(كم|عدد|كام|كل|جميع|قائمة|توزيع|احصائية)\b/.test(normalizedQuery)) {
       return this.queryTypes.STATISTICAL;
     }
 
-    // مقارنة
     if (/\b(فرق|مقارنة|أفضل|بين|ولا|أم|أيهما|مقابل)\b/.test(normalizedQuery)) {
       return this.queryTypes.COMPARATIVE;
     }
 
-    // مركب (عدة كيانات)
     const entityCount = Object.values(entities).filter(e => e && e.length > 0).length;
     if (entityCount >= 2) {
       return this.queryTypes.COMPLEX;
     }
 
-    // متتابع (ضمائر)
     if (/\b(ها|هم|هي|هو|هذا|هذه|ذلك|تلك|فيها|منها)\b/.test(normalizedQuery)) {
       return this.queryTypes.SEQUENTIAL;
     }
@@ -207,17 +362,15 @@ class IntentClassifier {
     entities.numbers = basicEntities.numbers || [];
     entities.governorates = basicEntities.governorates || [];
 
-    // 🔥 استخلاص الأنشطة بدقة عالية
     const queryLower = normalizedQuery.toLowerCase();
     
-    // طريقة 1: المطابقة المباشرة
+    // استخلاص الأنشطة
     this.commonActivities.forEach(activity => {
       if (queryLower.includes(activity)) {
         entities.activities.push(activity);
       }
     });
 
-    // طريقة 2: أنماط السياق
     const activityPatterns = [
       /(?:نشاط|مشروع|تأسيس|إنشاء|فتح|بدء|تشغيل)\s+([^\s,،.؟]+(?:\s+[^\s,،.؟]+){0,2})/g,
       /([^\s,،.؟]+)\s+(?:في|بـ|من)\s+(?:مصر|القاهرة|الإسكندرية)/g,
@@ -229,22 +382,6 @@ class IntentClassifier {
         const extracted = match[1].trim();
         if (extracted.length > 2 && extracted.length < 30) {
           entities.activities.push(extracted);
-        }
-      }
-    });
-
-    // طريقة 3: كلمات مفتاحية للصناعات
-    const industryKeywords = {
-      'فندق': ['فندق', 'فنادق', 'hotel', 'أوتيل'],
-      'مصنع': ['مصنع', 'مصانع', 'تصنيع', 'إنتاج'],
-      'مطعم': ['مطعم', 'مطاعم', 'restaurant'],
-      'كهرباء': ['كهرباء', 'كهربائي', 'طاقة', 'توليد']
-    };
-
-    Object.entries(industryKeywords).forEach(([mainWord, variations]) => {
-      if (variations.some(v => queryLower.includes(v))) {
-        if (!entities.activities.includes(mainWord)) {
-          entities.activities.push(mainWord);
         }
       }
     });
@@ -285,7 +422,6 @@ class IntentClassifier {
       entities.sectors.push('sectorB');
     }
 
-    // إزالة التكرار
     for (const key in entities) {
       if (Array.isArray(entities[key])) {
         entities[key] = [...new Set(entities[key])];
@@ -314,52 +450,6 @@ class IntentClassifier {
     }
 
     return false;
-  }
-
-  _suggestDatabasesEnhanced(classification) {
-    const databases = new Set();
-
-    // أولوية للكيانات
-    if (classification.entities.activities.length > 0) {
-      databases.add('activity');
-      databases.add('decision104'); // الأنشطة قد يكون لها حوافز
-    }
-
-    if (classification.entities.locations.length > 0 || 
-        classification.entities.governorates.length > 0) {
-      databases.add('industrial');
-    }
-
-    if (classification.entities.sectors.length > 0 || 
-        /حوافز|قرار|104/.test(classification.entities.activities.join(' '))) {
-      databases.add('decision104');
-    }
-
-    // بناءً على النية الرئيسية
-    if (classification.primaryIntent === 'legal' || 
-        classification.primaryIntent === 'activity') {
-      databases.add('activity');
-    }
-
-    if (classification.primaryIntent === 'geographic') {
-      databases.add('industrial');
-    }
-
-    if (classification.primaryIntent === 'incentive') {
-      databases.add('decision104');
-    }
-
-    // إحصائي = كل القواعد
-    if (classification.queryType === this.queryTypes.STATISTICAL) {
-      return ['activity', 'decision104', 'industrial'];
-    }
-
-    // افتراضي
-    if (databases.size === 0) {
-      databases.add('activity');
-    }
-
-    return Array.from(databases);
   }
 
   buildSubQueries(query, classification) {
