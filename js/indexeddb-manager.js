@@ -2,19 +2,20 @@
  * ═══════════════════════════════════════════════════════════════
  * 📦 IndexedDB Manager - إدارة التخزين المحلي
  * ═══════════════════════════════════════════════════════════════
- * الإصدار: 3.0 (حل نهائي لمشكلة TransactionInactiveError)
+ * الإصدار: 4.0 (إضافة مخزن التعلم)
  */
 
 class IndexedDBManager {
   constructor() {
     this.dbName = 'AIExpertDB';
-    this.version = 3;
+    this.version = 4; // زيادة الإصدار لإضافة مخزن جديد
     this.db = null;
     
     this.stores = {
       vectors: 'vectors',
       metaIndex: 'metaIndex',
       learning: 'learning',
+      learnedKnowledge: 'LearnedKnowledge', // إضافة المخزن الجديد
       settings: 'settings',
       context: 'contextMemory'
     };
@@ -58,10 +59,21 @@ class IndexedDBManager {
           console.log('  ✓ مخزن الفهرس جاهز');
         }
 
-        // مخزن التعلم (learning)
+        // مخزن التعلم (learning) - قديم
         if (!db.objectStoreNames.contains(this.stores.learning)) {
           db.createObjectStore(this.stores.learning, { keyPath: 'key' });
           console.log('  ✓ مخزن التعلم جاهز');
+        }
+
+        // مخزن المعرفة المتعلمة (LearnedKnowledge) - جديد
+        if (!db.objectStoreNames.contains(this.stores.learnedKnowledge)) {
+          const learnedStore = db.createObjectStore(this.stores.learnedKnowledge, { 
+            keyPath: 'id', 
+            autoIncrement: true 
+          });
+          learnedStore.createIndex('query', 'query', { unique: false });
+          learnedStore.createIndex('learnedAt', 'learnedAt', { unique: false });
+          console.log('  ✓ مخزن المعرفة المتعلمة جاهز');
         }
 
         // مخزن الإعدادات (settings)
@@ -82,7 +94,7 @@ class IndexedDBManager {
   }
 
   /**
-   * 🔧 حفظ قاعدة بيانات متجهات كاملة (الحل النهائي)
+   * 🔧 حفظ قاعدة بيانات متجهات كاملة
    */
   async saveVectorDatabase(dbName, data) {
     if (!this.db) {
@@ -102,7 +114,6 @@ class IndexedDBManager {
       const batch = data.slice(i, i + BATCH_SIZE);
       
       await new Promise((resolve, reject) => {
-        // فتح معاملة جديدة لكل دفعة
         const transaction = this.db.transaction([this.stores.vectors], 'readwrite');
         const store = transaction.objectStore(this.stores.vectors);
 
@@ -129,7 +140,6 @@ class IndexedDBManager {
           reject(new Error('Transaction aborted'));
         };
 
-        // إضافة السجلات
         batch.forEach((record, index) => {
           try {
             const request = store.put({
@@ -152,7 +162,6 @@ class IndexedDBManager {
         });
       });
 
-      // تأخير صغير بين الدفعات لتجنب ضغط المتصفح
       if (i + BATCH_SIZE < data.length) {
         await new Promise(resolve => setTimeout(resolve, 10));
       }
@@ -241,7 +250,6 @@ class IndexedDBManager {
         reject(transaction.error);
       };
 
-      // حفظ كل فئة
       entries.forEach(([category, items]) => {
         const request = store.put({
           category: category,
@@ -285,7 +293,38 @@ class IndexedDBManager {
   }
 
   /**
-   * حفظ بيانات التعلم
+   * 🎓 حفظ معرفة متعلمة جديدة
+   */
+  async saveLearnedKnowledge(query, answer, metadata = {}) {
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.stores.learnedKnowledge], 'readwrite');
+      const store = transaction.objectStore(this.stores.learnedKnowledge);
+
+      const record = {
+        query: query,
+        answer: answer,
+        metadata: metadata,
+        learnedAt: new Date().toISOString(),
+        usageCount: 0,
+        lastUsedAt: null,
+        correctionCount: 0
+      };
+
+      const request = store.add(record);
+
+      request.onsuccess = () => {
+        resolve(request.result); // إرجاع ID
+      };
+
+      request.onerror = () => {
+        console.error('❌ فشل حفظ المعرفة:', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  /**
+   * حفظ بيانات التعلم (القديم)
    */
   async saveLearning(key, value) {
     return new Promise((resolve, reject) => {
@@ -304,7 +343,7 @@ class IndexedDBManager {
   }
 
   /**
-   * تحميل بيانات التعلم
+   * تحميل بيانات التعلم (القديم)
    */
   async loadLearning(key) {
     return new Promise((resolve, reject) => {
@@ -381,20 +420,17 @@ class IndexedDBManager {
     };
 
     try {
-      // عدد المتجهات في كل قاعدة
       const dbNames = ['activity', 'decision104', 'industrial'];
       for (const dbName of dbNames) {
         const data = await this.loadVectorDatabase(dbName);
         stats.vectorDatabases[dbName] = data.length;
       }
 
-      // حجم الفهرس
       const index = await this.loadMetaIndex();
       stats.metaIndexSize = Object.keys(index).length;
 
-      // عدد المعارف المتعلمة
-      const transaction = this.db.transaction([this.stores.learning], 'readonly');
-      const store = transaction.objectStore(this.stores.learning);
+      const transaction = this.db.transaction([this.stores.learnedKnowledge], 'readonly');
+      const store = transaction.objectStore(this.stores.learnedKnowledge);
       const countRequest = store.count();
 
       await new Promise((resolve) => {
@@ -435,14 +471,12 @@ class IndexedDBManager {
   async importAllData(data) {
     console.log('📥 استيراد البيانات...');
 
-    // استيراد المتجهات
     for (const [dbName, records] of Object.entries(data.vectors)) {
       if (records && records.length > 0) {
         await this.saveVectorDatabase(dbName, records);
       }
     }
 
-    // استيراد الفهرس
     if (data.metaIndex) {
       await this.saveMetaIndex(data.metaIndex);
     }
@@ -487,7 +521,6 @@ class IndexedDBManager {
   }
 }
 
-// التصدير
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = IndexedDBManager;
 }
