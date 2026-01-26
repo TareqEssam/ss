@@ -250,254 +250,331 @@ async initialize() {
   }
 
   /**
-   * 📊 معالجة السؤال الإحصائي
-   */
-  async _handleStatisticalQuery(query, classification) {
-    console.log('📊 معالجة سؤال إحصائي...');
+ * 📊 معالجة السؤال الإحصائي - نسخة محسّنة
+ */
+async _handleStatisticalQuery(query, classification) {
+  console.log('📊 معالجة سؤال إحصائي...');
 
-    const results = await this.vectorEngine.parallelSearch(query, {
-      topK: 100, // نحتاج عدد كبير للإحصائيات
-      databases: classification.suggestedDatabases
-    });
+  const results = await this.vectorEngine.parallelSearch(query, {
+    topK: 200, // نحتاج كل البيانات للإحصائيات
+    databases: classification.suggestedDatabases,
+    queryType: 'statistical',
+    minSimilarity: 0.20 // مرونة للإحصائيات
+  });
 
-    // تحليل النتائج
-    const analysis = this._analyzeStatisticalResults(results, query);
+  // تحليل النتائج
+  const analysis = this._analyzeStatisticalResults(results, query, classification);
 
+  // إذا لم نجد شيء
+  if (analysis.total === 0) {
     return {
-      success: true,
-      type: 'statistical',
-      message: this._formatStatisticalAnswer(analysis, query),
-      data: analysis,
-      sources: this._extractSources(results)
+      success: false,
+      message: this._generateIntelligentError(query, classification, 'statistical'),
+      suggestion: this._generateSmartSuggestions(query, classification)
     };
   }
 
-  /**
-   * 🔍 تحليل النتائج الإحصائية
-   */
-  _analyzeStatisticalResults(results, query) {
-    const analysis = {
-      total: 0,
-      byGovernorate: {},
-      byAuthority: {},
-      byType: {},
-      topResults: []
-    };
-
-    // تحليل المناطق الصناعية
-    if (results.industrial && results.industrial.length > 0) {
-      results.industrial.forEach(record => {
-        const data = record.original_data;
-        
-        // حسب المحافظة
-        if (data.governorate) {
-          analysis.byGovernorate[data.governorate] = 
-            (analysis.byGovernorate[data.governorate] || 0) + 1;
-        }
-
-        // حسب التبعية
-        if (data.dependency) {
-          analysis.byAuthority[data.dependency] = 
-            (analysis.byAuthority[data.dependency] || 0) + 1;
-        }
-
-        analysis.total++;
-      });
-
-      analysis.topResults = results.industrial
-        .slice(0, 10)
-        .map(r => r.original_data);
-    }
-
-    // تحليل الأنشطة
-    if (results.activity && results.activity.length > 0) {
-      results.activity.forEach(record => {
-        const data = record.original_data;
-        analysis.total++;
-      });
-    }
-
-    // تحليل القرار 104
-    if (results.decision104 && results.decision104.length > 0) {
-      results.decision104.forEach(record => {
-        const preview = record.original_data.text_preview || '';
-        
-        // استخراج القطاع
-        if (preview.includes('sectorA') || preview.includes('القطاع أ')) {
-          analysis.byType['قطاع أ'] = (analysis.byType['قطاع أ'] || 0) + 1;
-        } else if (preview.includes('sectorB') || preview.includes('القطاع ب')) {
-          analysis.byType['قطاع ب'] = (analysis.byType['قطاع ب'] || 0) + 1;
-        }
-
-        analysis.total++;
-      });
-    }
-
-    return analysis;
-  }
+  return {
+    success: true,
+    type: 'statistical',
+    message: this._formatStatisticalAnswer(analysis, query),
+    data: analysis,
+    sources: this._extractSources(results)
+  };
+}
 
   /**
-   * 🆚 معالجة السؤال المقارن
-   */
-  async _handleComparativeQuery(query, classification) {
-    console.log('🆚 معالجة سؤال مقارنة...');
+ * 🆚 معالجة السؤال المقارن - نسخة محسّنة
+ */
+async _handleComparativeQuery(query, classification) {
+  console.log('🆚 معالجة سؤال مقارنة...');
 
-    // استخراج العناصر المراد مقارنتها
-    const entities = classification.entities;
-    
-    const comparisons = [];
+  const entities = classification.entities;
+  const comparisons = [];
 
-    // إذا كان يقارن بين مواقع
-    if (entities.locations.length >= 2) {
-      for (const location of entities.locations) {
-        const result = await this.vectorEngine.semanticSearch(
-          location,
-          'industrial',
-          1
-        );
-        if (result.length > 0) {
-          comparisons.push({
-            entity: location,
-            data: result[0].original_data,
-            type: 'location'
-          });
-        }
-      }
-    }
-
-    // إذا كان يقارن بين أنشطة
-    if (entities.activities.length >= 2) {
-      for (const activity of entities.activities) {
-        const result = await this.vectorEngine.semanticSearch(
-          activity,
-          'activity',
-          1
-        );
-        if (result.length > 0) {
-          comparisons.push({
-            entity: activity,
-            data: result[0].original_data,
-            type: 'activity'
-          });
-        }
-      }
-    }
-
-    return {
-      success: true,
-      type: 'comparative',
-      message: this._formatComparativeAnswer(comparisons),
-      data: { comparisons },
-      sources: comparisons.map(c => ({ type: c.type, entity: c.entity }))
-    };
-  }
-
-  /**
-   * 🔗 معالجة السؤال المتقاطع (يحتاج ربط بين قواعد)
-   */
-  async _handleCrossReferenceQuery(subQueries, classification) {
-    console.log('🔗 معالجة سؤال متقاطع...');
-
-    const crossResults = {
-      activity: null,
-      location: null,
-      decision104: null,
-      match: false
-    };
-
-    // البحث عن النشاط
-    if (subQueries.activity) {
-      const activityResults = await this.vectorEngine.semanticSearch(
-        subQueries.activity,
-        'activity',
-        3
-      );
-      if (activityResults.length > 0) {
-        crossResults.activity = activityResults[0];
-      }
-    }
-
-    // البحث عن الموقع
-    if (subQueries.location) {
-      const locationResults = await this.vectorEngine.semanticSearch(
-        subQueries.location,
+  // مقارنة بين مواقع
+  if (entities.locations && entities.locations.length >= 2) {
+    for (const location of entities.locations.slice(0, 3)) {
+      const results = await this.vectorEngine.semanticSearch(
+        location,
         'industrial',
-        3
+        1,
+        { queryType: 'comparative' }
       );
-      if (locationResults.length > 0) {
-        crossResults.location = locationResults[0];
+      
+      if (results.length > 0 && results[0].similarity > 0.35) {
+        comparisons.push({
+          entity: location,
+          data: results[0].original_data,
+          type: 'location',
+          confidence: results[0].similarity
+        });
       }
     }
+  }
 
-    // البحث في القرار 104 (إذا كان النشاط موجود)
-    if (crossResults.activity) {
-      const activityText = crossResults.activity.original_data.text_preview || '';
-      const decision104Results = await this.vectorEngine.semanticSearch(
-        activityText,
-        'decision104',
-        5
+  // مقارنة بين أنشطة
+  if (entities.activities && entities.activities.length >= 2) {
+    for (const activity of entities.activities.slice(0, 3)) {
+      const results = await this.vectorEngine.semanticSearch(
+        activity,
+        'activity',
+        1,
+        { queryType: 'comparative' }
       );
-      if (decision104Results.length > 0) {
-        crossResults.decision104 = decision104Results;
+      
+      if (results.length > 0 && results[0].similarity > 0.35) {
+        comparisons.push({
+          entity: activity,
+          data: results[0].original_data,
+          type: 'activity',
+          confidence: results[0].similarity
+        });
       }
     }
+  }
 
-    // التحقق من التطابق
-    crossResults.match = !!(crossResults.activity && crossResults.location);
-
+  if (comparisons.length < 2) {
     return {
-      success: true,
-      type: 'cross_reference',
-      message: this._formatCrossReferenceAnswer(crossResults),
-      data: crossResults,
-      sources: this._extractCrossReferenceSources(crossResults)
+      success: false,
+      message: this._generateIntelligentError(query, classification, 'comparative'),
+      suggestion: 'يرجى تحديد عنصرين على الأقل للمقارنة بينهما.'
     };
   }
+
+  return {
+    success: true,
+    type: 'comparative',
+    message: this._formatComparativeAnswer(comparisons),
+    data: { comparisons },
+    sources: comparisons.map(c => ({ 
+      type: c.type, 
+      entity: c.entity,
+      confidence: c.confidence
+    }))
+  };
+}
+  /**
+ * 🔗 معالجة السؤال المتقاطع - نسخة محسّنة
+ */
+async _handleCrossReferenceQuery(subQueries, classification) {
+  console.log('🔗 معالجة سؤال متقاطع...');
+
+  const crossResults = {
+    activity: null,
+    location: null,
+    decision104: null,
+    match: false,
+    confidence: 0
+  };
+
+  // البحث عن النشاط
+  if (subQueries.activity) {
+    const activityResults = await this.vectorEngine.semanticSearch(
+      subQueries.activity,
+      'activity',
+      3,
+      { queryType: 'complex' }
+    );
+    
+    if (activityResults.length > 0 && activityResults[0].similarity > 0.30) {
+      crossResults.activity = activityResults[0];
+      crossResults.confidence += activityResults[0].similarity * 0.4;
+    }
+  }
+
+  // البحث عن الموقع
+  if (subQueries.location) {
+    const locationResults = await this.vectorEngine.semanticSearch(
+      subQueries.location,
+      'industrial',
+      3,
+      { queryType: 'complex' }
+    );
+    
+    if (locationResults.length > 0 && locationResults[0].similarity > 0.30) {
+      crossResults.location = locationResults[0];
+      crossResults.confidence += locationResults[0].similarity * 0.3;
+    }
+  }
+
+  // البحث في القرار 104
+  if (crossResults.activity || subQueries.decision104) {
+    const searchQuery = crossResults.activity 
+      ? crossResults.activity.original_data.text_preview || subQueries.decision104
+      : subQueries.decision104;
+      
+    const decision104Results = await this.vectorEngine.semanticSearch(
+      searchQuery,
+      'decision104',
+      5,
+      { queryType: 'complex' }
+    );
+    
+    if (decision104Results.length > 0 && decision104Results[0].similarity > 0.25) {
+      crossResults.decision104 = decision104Results;
+      crossResults.confidence += decision104Results[0].similarity * 0.3;
+    }
+  }
+
+  // التحقق من التطابق
+  const foundComponents = [
+    crossResults.activity,
+    crossResults.location,
+    crossResults.decision104
+  ].filter(Boolean).length;
+
+  crossResults.match = foundComponents >= 2;
+
+  if (!crossResults.match) {
+    return {
+      success: false,
+      message: this._generateIntelligentError(query, classification, 'cross_reference'),
+      partialData: crossResults,
+      suggestion: this._generateCrossReferenceHelp(crossResults)
+    };
+  }
+
+  return {
+    success: true,
+    type: 'cross_reference',
+    message: this._formatCrossReferenceAnswer(crossResults),
+    data: crossResults,
+    confidence: crossResults.confidence,
+    sources: this._extractCrossReferenceSources(crossResults)
+  };
+}
 
   /**
-   * ✅ معالجة السؤال البسيط
-   */
-  async _handleSimpleQuery(query, classification) {
-    console.log('✅ معالجة سؤال بسيط...');
+ * ✅ معالجة السؤال البسيط - نسخة محسّنة
+ */
+async _handleSimpleQuery(query, classification) {
+  console.log('✅ معالجة سؤال بسيط...');
 
-    const results = await this.vectorEngine.parallelSearch(query, {
-      topK: 5,
-      databases: classification.suggestedDatabases
-    });
+  const results = await this.vectorEngine.parallelSearch(query, {
+    topK: 5,
+    databases: classification.suggestedDatabases,
+    queryType: 'simple'
+  });
 
-    // اختيار أفضل نتيجة
-    const allResults = [
-      ...(results.activity || []),
-      ...(results.decision104 || []),
-      ...(results.industrial || [])
-    ];
+  // جمع كل النتائج
+  const allResults = [
+    ...(results.activity || []),
+    ...(results.decision104 || []),
+    ...(results.industrial || [])
+  ];
 
-    allResults.sort((a, b) => b.similarity - a.similarity);
+  allResults.sort((a, b) => b.similarity - a.similarity);
 
-    const bestResult = allResults[0];
+  const bestResult = allResults[0];
 
-    if (!bestResult || bestResult.similarity < 0.3) {
-      return {
-        success: false,
-        message: 'عذراً، لم أجد معلومات كافية للإجابة على سؤالك. هل يمكنك إعادة صياغته؟',
-        suggestion: this._generateSuggestions(query)
-      };
-    }
-
+  // إذا لم نجد شيء أو التطابق ضعيف جداً
+  if (!bestResult || bestResult.similarity < 0.30) {
     return {
-      success: true,
-      type: 'simple',
-      message: this._formatSimpleAnswer(bestResult, classification),
-      data: bestResult,
-      confidence: bestResult.similarity,
-      sources: [{ 
-        database: bestResult.database, 
-        id: bestResult.id,
-        similarity: bestResult.similarity 
-      }]
+      success: false,
+      message: this._generateIntelligentError(query, classification, 'simple'),
+      suggestion: this._generateSmartSuggestions(query, classification),
+      partialResults: allResults.slice(0, 3).filter(r => r.similarity > 0.20)
     };
   }
 
+  return {
+    success: true,
+    type: 'simple',
+    message: this._formatSimpleAnswer(bestResult, classification),
+    data: bestResult,
+    confidence: bestResult.similarity,
+    sources: [{ 
+      database: bestResult.database, 
+      id: bestResult.id,
+      similarity: bestResult.similarity 
+    }]
+  };
+}
+
+
+  /**
+ * 🧠 توليد رسالة خطأ ذكية (بدلاً من "عذراً لم أجد")
+ */
+_generateIntelligentError(query, classification, queryType) {
+  const messages = {
+    statistical: `لم أتمكن من العثور على بيانات إحصائية كافية حول "${query}".`,
+    comparative: `لم أستطع إجراء المقارنة المطلوبة في "${query}".`,
+    cross_reference: `لم أجد تطابقاً كاملاً لجميع عناصر سؤالك "${query}".`,
+    simple: `لم أجد معلومات دقيقة كافية للإجابة على "${query}".`
+  };
+
+  let message = messages[queryType] || messages.simple;
+
+  // إضافة معلومات عن التصنيف
+  if (classification.suggestedDatabases.length > 0) {
+    message += `\n\nلقد بحثت في: ${classification.suggestedDatabases.join('، ')}.`;
+  }
+
+  return message;
+}
+
+/**
+ * 💡 توليد اقتراحات ذكية
+ */
+_generateSmartSuggestions(query, classification) {
+  const suggestions = [];
+
+  // اقتراحات حسب النية
+  if (classification.primaryIntent === 'legal') {
+    suggestions.push('• جرّب السؤال عن نشاط محدد، مثل: "ما تراخيص فتح فندق؟"');
+  }
+
+  if (classification.primaryIntent === 'geographic') {
+    suggestions.push('• اذكر اسم المنطقة أو المحافظة بوضوح');
+    suggestions.push('• مثال: "أين توجد المناطق الصناعية في القاهرة؟"');
+  }
+
+  if (classification.primaryIntent === 'incentive') {
+    suggestions.push('• جرّب السؤال: "ما حوافز القرار 104 للقطاع أ؟"');
+  }
+
+  // اقتراحات عامة
+  if (suggestions.length === 0) {
+    suggestions.push('• استخدم كلمات أكثر وضوحاً ودقة');
+    suggestions.push('• اذكر نوع النشاط أو المنطقة بالتحديد');
+    suggestions.push('• جرّب إعادة صياغة السؤال بطريقة مختلفة');
+  }
+
+  return suggestions.join('\n');
+}
+
+/**
+ * 🔍 مساعدة للأسئلة المتقاطعة
+ */
+_generateCrossReferenceHelp(partialResults) {
+  const found = [];
+  const missing = [];
+
+  if (partialResults.activity) {
+    found.push('✅ النشاط');
+  } else {
+    missing.push('❌ النشاط');
+  }
+
+  if (partialResults.location) {
+    found.push('✅ الموقع');
+  } else {
+    missing.push('❌ الموقع');
+  }
+
+  if (partialResults.decision104) {
+    found.push('✅ الحوافز');
+  } else {
+    missing.push('❌ الحوافز');
+  }
+
+  let help = `\n\n**ما وجدته:**\n${found.join('\n')}`;
+  help += `\n\n**ما لم أجده:**\n${missing.join('\n')}`;
+  help += '\n\nيرجى إعادة صياغة السؤال مع التركيز على العناصر المفقودة.';
+
+  return help;
+}
   /**
    * 📝 تنسيق الإجابة البسيطة
    */
@@ -1158,4 +1235,5 @@ async _saveAllData() {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = AIExpertCore;
 }
+
 
