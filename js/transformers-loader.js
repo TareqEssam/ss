@@ -4,7 +4,7 @@
  * 
  * استخدام نموذج حقيقي للمتجهات في المتصفح
  * 
- * @version 1.1.0
+ * @version 1.0.0
  */
 
 class TransformersLoader {
@@ -45,8 +45,10 @@ class TransformersLoader {
     try {
       console.log('📦 بدء تحميل نموذج المتجهات...');
 
-      // انتظار تحميل مكتبة Transformers.js
-      await this._waitForTransformers();
+      // محاولة تحميل transformers.js من CDN
+      if (!window.transformers) {
+        await this._loadTransformersScript();
+      }
 
       console.log('✅ تم تحميل مكتبة transformers.js');
       console.log('🔄 تهيئة النموذج...');
@@ -88,36 +90,32 @@ class TransformersLoader {
   }
 
   /**
-   * ⏳ الانتظار حتى يتم تحميل Transformers.js
+   * 📥 تحميل سكريبت transformers.js
    */
-  async _waitForTransformers() {
+  async _loadTransformersScript() {
     return new Promise((resolve, reject) => {
-      // إذا كانت المكتبة موجودة بالفعل
-      if (window.transformers && window.transformers.pipeline) {
-        console.log('📚 مكتبة Transformers.js محملة مسبقًا');
+      if (window.transformers) {
         resolve();
         return;
       }
 
-      console.log('⏳ في انتظار تحميل مكتبة Transformers.js...');
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js';
+      script.type = 'module';
+      script.crossOrigin = 'anonymous';
       
-      let attempts = 0;
-      const maxAttempts = 30; // 30 محاولة × 500ms = 15 ثانية كحد أقصى
-      
-      const checkInterval = setInterval(() => {
-        attempts++;
-        
-        if (window.transformers && window.transformers.pipeline) {
-          clearInterval(checkInterval);
-          console.log(`✅ تم تحميل Transformers.js بعد ${attempts} محاولات`);
-          resolve();
-        } else if (attempts >= maxAttempts) {
-          clearInterval(checkInterval);
-          reject(new Error('انتهت مهلة انتظار تحميل Transformers.js. تأكد من اتصال الإنترنت.'));
-        } else if (attempts % 5 === 0) {
-          console.log(`⏳ لا يزال في انتظار Transformers.js... (المحاولة ${attempts}/${maxAttempts})`);
-        }
-      }, 500);
+      script.onload = () => {
+        console.log('✅ تم تحميل Transformers.js من CDN');
+        // الانتظار قليلاً للتأكد من تحميل المكتبة
+        setTimeout(resolve, 100);
+      };
+
+      script.onerror = (error) => {
+        console.error('❌ فشل تحميل Transformers.js:', error);
+        reject(new Error('فشل تحميل مكتبة Transformers.js'));
+      };
+
+      document.head.appendChild(script);
     });
   }
 
@@ -158,17 +156,6 @@ class TransformersLoader {
       hasError: !!this.loadError,
       error: this.loadError?.message
     };
-  }
-
-  /**
-   * 🔄 إعادة تحميل النموذج
-   */
-  async reload() {
-    this.isLoaded = false;
-    this.isLoading = false;
-    this.loadError = null;
-    this.pipeline = null;
-    return this.load();
   }
 }
 
