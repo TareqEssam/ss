@@ -1,16 +1,20 @@
-
 /**
- * 🤖 محمل Transformers.js - دعم ES Module
- * @version 2.0.0
+ * 🤖 محمل Transformers.js - نموذج متجهات حقيقي
+ * Real Embedding Model Loader
+ * 
+ * استخدام نموذج حقيقي للمتجهات في المتصفح
+ * 
+ * @version 1.0.0
  */
 
 class TransformersLoader {
   constructor() {
     this.pipeline = null;
-    this.isLoaded = false;
+    this.model = null;
+    this.tokenizer = null;
     this.isLoading = false;
+    this.isLoaded = false;
     this.loadError = null;
-    this.useESModule = false;
   }
 
   /**
@@ -41,41 +45,22 @@ class TransformersLoader {
     try {
       console.log('📦 بدء تحميل نموذج المتجهات...');
 
-      // محاولة 1: استخدام window.transformers إذا كان محملاً
-      if (window.transformers && window.transformers.pipeline) {
-        console.log('✅ استخدام Transformers.js من window.transformers');
-        return await this._loadFromWindow();
+      // محاولة تحميل transformers.js من CDN
+      if (!window.transformers) {
+        await this._loadTransformersScript();
       }
 
-      // محاولة 2: استخدام ES Module ديناميكي
-      console.log('🔄 محاولة تحميل كـ ES Module...');
-      return await this._loadAsESModule();
+      console.log('✅ تم تحميل مكتبة transformers.js');
+      console.log('🔄 تهيئة النموذج...');
 
-    } catch (error) {
-      console.error('❌ فشل تحميل النموذج:', error);
-      this.loadError = error;
-      this.isLoading = false;
-      
-      return { 
-        success: false, 
-        error: error.message,
-        fallback: true 
-      };
-    }
-  }
-
-  /**
-   * 📥 التحميل من window.transformers
-   */
-  async _loadFromWindow() {
-    try {
+      // استخدام النموذج المناسب
       const { pipeline } = window.transformers;
       
       this.pipeline = await pipeline(
         'feature-extraction',
         'Xenova/paraphrase-multilingual-MiniLM-L12-v2',
         {
-          quantized: true,
+          quantized: true, // استخدام النموذج المضغوط للسرعة
           progress_callback: (progress) => {
             if (progress.status === 'progress') {
               console.log(`⏳ التحميل: ${progress.file} - ${Math.round(progress.progress || 0)}%`);
@@ -92,44 +77,46 @@ class TransformersLoader {
       return { success: true, model: this.pipeline };
 
     } catch (error) {
-      throw new Error(`فشل التحميل من window: ${error.message}`);
+      console.error('❌ فشل تحميل النموذج:', error);
+      this.loadError = error;
+      this.isLoading = false;
+      
+      return { 
+        success: false, 
+        error: error.message,
+        fallback: true 
+      };
     }
   }
 
   /**
-   * 🔄 التحميل كـ ES Module
+   * 📥 تحميل سكريبت transformers.js
    */
-  async _loadAsESModule() {
-    try {
-      // استخدام import() الديناميكي
-      const transformersModule = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2');
-      
-      const { pipeline } = transformersModule;
-      
-      this.pipeline = await pipeline(
-        'feature-extraction',
-        'Xenova/paraphrase-multilingual-MiniLM-L12-v2',
-        {
-          quantized: true,
-          progress_callback: (progress) => {
-            if (progress.status === 'progress') {
-              console.log(`⏳ التحميل: ${progress.file} - ${Math.round(progress.progress || 0)}%`);
-            }
-          }
-        }
-      );
+  async _loadTransformersScript() {
+    return new Promise((resolve, reject) => {
+      if (window.transformers) {
+        resolve();
+        return;
+      }
 
-      this.isLoaded = true;
-      this.isLoading = false;
-      this.useESModule = true;
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js';
+      script.type = 'module';
+      script.crossOrigin = 'anonymous';
       
-      console.log('✅ تم تحميل نموذج المتجهات كـ ES Module!');
-      
-      return { success: true, model: this.pipeline };
+      script.onload = () => {
+        console.log('✅ تم تحميل Transformers.js من CDN');
+        // الانتظار قليلاً للتأكد من تحميل المكتبة
+        setTimeout(resolve, 100);
+      };
 
-    } catch (error) {
-      throw new Error(`فشل تحميل ES Module: ${error.message}`);
-    }
+      script.onerror = (error) => {
+        console.error('❌ فشل تحميل Transformers.js:', error);
+        reject(new Error('فشل تحميل مكتبة Transformers.js'));
+      };
+
+      document.head.appendChild(script);
+    });
   }
 
   /**
@@ -149,6 +136,7 @@ class TransformersLoader {
         normalize: true
       });
 
+      // استخراج المتجه
       const embedding = Array.from(output.data);
       return embedding;
 
@@ -166,15 +154,14 @@ class TransformersLoader {
       isLoaded: this.isLoaded,
       isLoading: this.isLoading,
       hasError: !!this.loadError,
-      error: this.loadError?.message,
-      useESModule: this.useESModule
+      error: this.loadError?.message
     };
   }
 }
 
-// Export for ES Module
-if (typeof window !== 'undefined') {
-  window.TransformersLoader = TransformersLoader;
-}
+// Singleton
+window.transformersLoader = window.transformersLoader || new TransformersLoader();
 
-export default TransformersLoader;
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = TransformersLoader;
+}
