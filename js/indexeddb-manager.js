@@ -1,47 +1,30 @@
 /**
- * 💾 مدير قاعدة البيانات المحلية
- * IndexedDB Manager for Local Storage
- * 
- * الهدف: حفظ واسترجاع البيانات المتجهية والفهارس والذاكرة محلياً
- * يتم التحميل مرة واحدة فقط عند أول استخدام
- * 
- * @author AI Expert System
- * @version 2.0.0
+ * ═══════════════════════════════════════════════════════════════
+ * 📦 IndexedDB Manager - إدارة التخزين المحلي
+ * ═══════════════════════════════════════════════════════════════
+ * الإصدار: 2.0 (معالج مشكلة TransactionInactiveError)
  */
 
 class IndexedDBManager {
   constructor() {
-    this.dbName = 'GAFI_AI_Brain';
+    this.dbName = 'AIExpertDB';
     this.version = 4;
     this.db = null;
-
-    // أسماء المخازن (Stores)
+    
     this.stores = {
-      VECTORS: 'VectorsStore',           // المتجهات الأصلية
-      META_INDEX: 'MetaIndex',           // الفهرس السريع
-      LEARNED: 'LearnedKnowledge',       // الذاكرة والتعلم
-      CONFIG: 'SystemConfig',            // الإعدادات
-      CONTEXT: 'ContextMemory'           // الذاكرة السياقية
+      vectors: 'vectors',
+      metaIndex: 'metaIndex',
+      learning: 'learning',
+      settings: 'settings',
+      context: 'contextMemory'
     };
-
-    // حالة التهيئة
-    this.initialized = false;
-    this.initPromise = null;
   }
 
   /**
-   * 🚀 تهيئة قاعدة البيانات
+   * تهيئة قاعدة البيانات
    */
   async init() {
-    if (this.initialized) {
-      return this.db;
-    }
-
-    if (this.initPromise) {
-      return this.initPromise;
-    }
-
-    this.initPromise = new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const request = indexedDB.open(this.dbName, this.version);
 
       request.onerror = () => {
@@ -49,59 +32,54 @@ class IndexedDBManager {
         reject(request.error);
       };
 
-      request.onsuccess = (event) => {
-        this.db = event.target.result;
-        this.initialized = true;
+      request.onsuccess = () => {
+        this.db = request.result;
         console.log('✅ تم فتح قاعدة البيانات بنجاح');
         resolve(this.db);
       };
 
       request.onupgradeneeded = (event) => {
-        const db = event.target.result;
         console.log('🔧 تحديث بنية قاعدة البيانات...');
+        const db = event.target.result;
 
-        // إنشاء المخازن إذا لم تكن موجودة
-        
-        // 1. مخزن المتجهات
-        if (!db.objectStoreNames.contains(this.stores.VECTORS)) {
-          const vectorStore = db.createObjectStore(this.stores.VECTORS, { 
-            keyPath: 'id' 
+        // مخزن المتجهات (vectors)
+        if (!db.objectStoreNames.contains(this.stores.vectors)) {
+          const vectorStore = db.createObjectStore(this.stores.vectors, { 
+            keyPath: 'id', 
+            autoIncrement: true 
           });
-          vectorStore.createIndex('database', 'database', { unique: false });
-          vectorStore.createIndex('type', 'type', { unique: false });
+          vectorStore.createIndex('dbName', 'dbName', { unique: false });
           console.log('  ✓ مخزن المتجهات جاهز');
         }
 
-        // 2. مخزن الفهرس
-        if (!db.objectStoreNames.contains(this.stores.META_INDEX)) {
-          const metaStore = db.createObjectStore(this.stores.META_INDEX, { 
-            keyPath: 'key' 
+        // مخزن الفهرس (metaIndex)
+        if (!db.objectStoreNames.contains(this.stores.metaIndex)) {
+          const indexStore = db.createObjectStore(this.stores.metaIndex, { 
+            keyPath: 'category' 
           });
-          metaStore.createIndex('category', 'category', { unique: false });
           console.log('  ✓ مخزن الفهرس جاهز');
         }
 
-        // 3. مخزن التعلم
-        if (!db.objectStoreNames.contains(this.stores.LEARNED)) {
-          db.createObjectStore(this.stores.LEARNED, { 
-            keyPath: 'id',
-            autoIncrement: true
+        // مخزن التعلم (learning)
+        if (!db.objectStoreNames.contains(this.stores.learning)) {
+          const learningStore = db.createObjectStore(this.stores.learning, { 
+            keyPath: 'key' 
           });
           console.log('  ✓ مخزن التعلم جاهز');
         }
 
-        // 4. مخزن الإعدادات
-        if (!db.objectStoreNames.contains(this.stores.CONFIG)) {
-          db.createObjectStore(this.stores.CONFIG, { 
+        // مخزن الإعدادات (settings)
+        if (!db.objectStoreNames.contains(this.stores.settings)) {
+          const settingsStore = db.createObjectStore(this.stores.settings, { 
             keyPath: 'key' 
           });
           console.log('  ✓ مخزن الإعدادات جاهز');
         }
 
-        // 5. مخزن الذاكرة السياقية
-        if (!db.objectStoreNames.contains(this.stores.CONTEXT)) {
-          db.createObjectStore(this.stores.CONTEXT, { 
-            keyPath: 'id' 
+        // مخزن الذاكرة السياقية (contextMemory)
+        if (!db.objectStoreNames.contains(this.stores.context)) {
+          const contextStore = db.createObjectStore(this.stores.context, { 
+            keyPath: 'timestamp' 
           });
           console.log('  ✓ مخزن الذاكرة السياقية جاهز');
         }
@@ -109,424 +87,362 @@ class IndexedDBManager {
         console.log('✅ اكتمل تحديث البنية');
       };
     });
-
-    return this.initPromise;
   }
 
   /**
-   * 💾 حفظ قاعدة بيانات متجهات كاملة
+   * 🔧 حفظ قاعدة بيانات متجهات كاملة
+   * الحل: حفظ دفعي (batch) بمعاملات منفصلة
    */
-  async saveVectorDatabase(databaseName, vectorData) {
-    await this.init();
-
-    const transaction = this.db.transaction([this.stores.VECTORS], 'readwrite');
-    const store = transaction.objectStore(this.stores.VECTORS);
-
-    // حذف البيانات القديمة لهذه القاعدة
-    await this._clearByDatabase(databaseName);
-
-    // حفظ البيانات الجديدة
-    const promises = [];
-    
-    if (vectorData && vectorData.data && Array.isArray(vectorData.data)) {
-      for (const record of vectorData.data) {
-        const saveData = {
-          ...record,
-          database: databaseName,
-          savedAt: new Date().toISOString()
-        };
-        promises.push(this._promisifyRequest(store.put(saveData)));
-      }
+  async saveVectorDatabase(dbName, data) {
+    if (!this.db) {
+      throw new Error('قاعدة البيانات غير مهيأة');
     }
 
-    await Promise.all(promises);
+    console.log(`💾 حفظ ${data.length} سجل في ${dbName}...`);
 
-    // حفظ الميتاداتا
-    await this.saveConfig(`${databaseName}_meta`, {
-      name: vectorData.name,
-      description: vectorData.description,
-      version: vectorData.version,
-      statistics: vectorData.statistics,
-      savedAt: new Date().toISOString()
+    // حذف البيانات القديمة أولاً
+    await this.clearVectorDatabase(dbName);
+
+    // حفظ دفعي (50 سجل في كل معاملة)
+    const BATCH_SIZE = 50;
+    let saved = 0;
+
+    for (let i = 0; i < data.length; i += BATCH_SIZE) {
+      const batch = data.slice(i, i + BATCH_SIZE);
+      
+      await new Promise((resolve, reject) => {
+        // فتح معاملة جديدة لكل دفعة
+        const transaction = this.db.transaction([this.stores.vectors], 'readwrite');
+        const store = transaction.objectStore(this.stores.vectors);
+
+        transaction.oncomplete = () => {
+          saved += batch.length;
+          console.log(`  ✓ تم حفظ ${saved}/${data.length} سجل`);
+          resolve();
+        };
+
+        transaction.onerror = () => {
+          console.error('❌ خطأ في المعاملة:', transaction.error);
+          reject(transaction.error);
+        };
+
+        // إضافة السجلات
+        batch.forEach(record => {
+          store.put({
+            ...record,
+            dbName: dbName
+          });
+        });
+      });
+    }
+
+    console.log(`✅ تم حفظ ${saved} سجل في ${dbName}`);
+    return saved;
+  }
+
+  /**
+   * حذف قاعدة بيانات متجهات معينة
+   */
+  async clearVectorDatabase(dbName) {
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.stores.vectors], 'readwrite');
+      const store = transaction.objectStore(this.stores.vectors);
+      const index = store.index('dbName');
+      const request = index.openCursor(IDBKeyRange.only(dbName));
+
+      request.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (cursor) {
+          cursor.delete();
+          cursor.continue();
+        }
+      };
+
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
     });
-
-    console.log(`✅ تم حفظ ${promises.length} سجل لقاعدة ${databaseName}`);
-    return promises.length;
   }
 
   /**
-   * 📂 تحميل قاعدة بيانات متجهات كاملة
+   * تحميل قاعدة بيانات متجهات
    */
-  async loadVectorDatabase(databaseName) {
-    await this.init();
+  async loadVectorDatabase(dbName) {
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.stores.vectors], 'readonly');
+      const store = transaction.objectStore(this.stores.vectors);
+      const index = store.index('dbName');
+      const request = index.getAll(dbName);
 
-    const transaction = this.db.transaction([this.stores.VECTORS], 'readonly');
-    const store = transaction.objectStore(this.stores.VECTORS);
-    const index = store.index('database');
+      request.onsuccess = () => {
+        const data = request.result;
+        console.log(`📂 تم تحميل ${data.length} سجل من قاعدة ${dbName}`);
+        resolve(data);
+      };
 
-    const records = await this._promisifyRequest(index.getAll(databaseName));
-
-    // تحميل الميتاداتا
-    const meta = await this.loadConfig(`${databaseName}_meta`);
-
-    console.log(`📂 تم تحميل ${records.length} سجل من قاعدة ${databaseName}`);
-
-    return {
-      ...meta,
-      data: records
-    };
+      request.onerror = () => {
+        console.error(`❌ فشل تحميل ${dbName}:`, request.error);
+        reject(request.error);
+      };
+    });
   }
 
   /**
-   * 🗂️ حفظ الفهرس (Meta Index)
+   * حفظ الفهرس الوصفي
    */
-  async saveMetaIndex(indexData) {
-    await this.init();
+  async saveMetaIndex(index) {
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.stores.metaIndex], 'readwrite');
+      const store = transaction.objectStore(this.stores.metaIndex);
 
-    const transaction = this.db.transaction([this.stores.META_INDEX], 'readwrite');
-    const store = transaction.objectStore(this.stores.META_INDEX);
+      transaction.oncomplete = () => {
+        console.log('💾 تم حفظ الفهرس');
+        resolve();
+      };
 
-    const promises = [];
-    
-    for (const [category, items] of Object.entries(indexData)) {
-      promises.push(
-        this._promisifyRequest(store.put({
-          key: category,
+      transaction.onerror = () => {
+        console.error('❌ فشل حفظ الفهرس:', transaction.error);
+        reject(transaction.error);
+      };
+
+      // حفظ كل فئة
+      for (const [category, items] of Object.entries(index)) {
+        store.put({
           category: category,
           items: items,
-          updatedAt: new Date().toISOString()
-        }))
-      );
-    }
-
-    await Promise.all(promises);
-    console.log(`🗂️ تم حفظ ${promises.length} فئة في الفهرس`);
+          timestamp: Date.now()
+        });
+      }
+    });
   }
 
   /**
-   * 📖 تحميل الفهرس
+   * تحميل الفهرس الوصفي
    */
   async loadMetaIndex() {
-    await this.init();
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.stores.metaIndex], 'readonly');
+      const store = transaction.objectStore(this.stores.metaIndex);
+      const request = store.getAll();
 
-    const transaction = this.db.transaction([this.stores.META_INDEX], 'readonly');
-    const store = transaction.objectStore(this.stores.META_INDEX);
+      request.onsuccess = () => {
+        const data = request.result;
+        const index = {};
+        
+        data.forEach(item => {
+          index[item.category] = item.items;
+        });
 
-    const allRecords = await this._promisifyRequest(store.getAll());
+        console.log(`📖 تم تحميل ${data.length} فئة من الفهرس`);
+        resolve(index);
+      };
 
-    const index = {};
-    for (const record of allRecords) {
-      index[record.key] = record.items;
-    }
-
-    console.log(`📖 تم تحميل ${Object.keys(index).length} فئة من الفهرس`);
-    return index;
+      request.onerror = () => {
+        console.error('❌ فشل تحميل الفهرس:', request.error);
+        reject(request.error);
+      };
+    });
   }
 
   /**
-   * 🧠 حفظ معلومة متعلمة
+   * حفظ بيانات التعلم
    */
-  async saveLearnedKnowledge(query, answer, metadata = {}) {
-    await this.init();
+  async saveLearning(key, value) {
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.stores.learning], 'readwrite');
+      const store = transaction.objectStore(this.stores.learning);
 
-    const transaction = this.db.transaction([this.stores.LEARNED], 'readwrite');
-    const store = transaction.objectStore(this.stores.LEARNED);
+      const request = store.put({
+        key: key,
+        value: value,
+        timestamp: Date.now()
+      });
 
-    const record = {
-      query: query,
-      answer: answer,
-      metadata: metadata,
-      learnedAt: new Date().toISOString(),
-      usageCount: 0
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * تحميل بيانات التعلم
+   */
+  async loadLearning(key) {
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.stores.learning], 'readonly');
+      const store = transaction.objectStore(this.stores.learning);
+      const request = store.get(key);
+
+      request.onsuccess = () => {
+        resolve(request.result ? request.result.value : null);
+      };
+
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * حفظ الإعدادات
+   */
+  async saveSetting(key, value) {
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.stores.settings], 'readwrite');
+      const store = transaction.objectStore(this.stores.settings);
+
+      const request = store.put({
+        key: key,
+        value: value,
+        timestamp: Date.now()
+      });
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * تحميل الإعدادات
+   */
+  async loadSetting(key) {
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.stores.settings], 'readonly');
+      const store = transaction.objectStore(this.stores.settings);
+      const request = store.get(key);
+
+      request.onsuccess = () => {
+        resolve(request.result ? request.result.value : null);
+      };
+
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * حفظ الذاكرة السياقية
+   */
+  async saveContext(context) {
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.stores.context], 'readwrite');
+      const store = transaction.objectStore(this.stores.context);
+
+      const request = store.put({
+        timestamp: Date.now(),
+        data: context
+      });
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * تحميل آخر سياق
+   */
+  async loadLastContext() {
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.stores.context], 'readonly');
+      const store = transaction.objectStore(this.stores.context);
+      const request = store.openCursor(null, 'prev'); // آخر سجل
+
+      request.onsuccess = () => {
+        const cursor = request.result;
+        resolve(cursor ? cursor.value.data : null);
+      };
+
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * تصدير جميع البيانات
+   */
+  async exportAllData() {
+    const data = {
+      vectors: {},
+      metaIndex: await this.loadMetaIndex(),
+      learning: await this._exportStore(this.stores.learning),
+      settings: await this._exportStore(this.stores.settings),
+      timestamp: Date.now()
     };
 
-    const id = await this._promisifyRequest(store.add(record));
-    console.log(`🧠 تم حفظ معلومة متعلمة (ID: ${id})`);
-    return id;
-  }
-
-  /**
-   * 🔍 البحث في المعلومات المتعلمة
-   */
-  async searchLearnedKnowledge(query, normalizer) {
-    await this.init();
-
-    const transaction = this.db.transaction([this.stores.LEARNED], 'readonly');
-    const store = transaction.objectStore(this.stores.LEARNED);
-
-    const allRecords = await this._promisifyRequest(store.getAll());
-
-    // البحث عن تطابق
-    const normalizedQuery = normalizer.normalize(query);
-    
-    for (const record of allRecords) {
-      const normalizedStoredQuery = normalizer.normalize(record.query);
-      const similarity = normalizer.textSimilarity(normalizedQuery, normalizedStoredQuery);
-
-      if (similarity > 0.85) {
-        // تحديث عداد الاستخدام
-        await this._updateUsageCount(record.id);
-        return record;
-      }
+    // تصدير كل قاعدة متجهات
+    const dbNames = ['activity', 'decision104', 'industrial'];
+    for (const dbName of dbNames) {
+      data.vectors[dbName] = await this.loadVectorDatabase(dbName);
     }
 
-    return null;
+    return data;
   }
 
   /**
-   * تحديث عداد الاستخدام
+   * استيراد جميع البيانات
    */
-  async _updateUsageCount(id) {
-    const transaction = this.db.transaction([this.stores.LEARNED], 'readwrite');
-    const store = transaction.objectStore(this.stores.LEARNED);
-
-    const record = await this._promisifyRequest(store.get(id));
-    if (record) {
-      record.usageCount = (record.usageCount || 0) + 1;
-      record.lastUsedAt = new Date().toISOString();
-      await this._promisifyRequest(store.put(record));
-    }
-  }
-
-  /**
-   * ⚙️ حفظ إعدادات
-   */
-  async saveConfig(key, value) {
-    await this.init();
-
-    const transaction = this.db.transaction([this.stores.CONFIG], 'readwrite');
-    const store = transaction.objectStore(this.stores.CONFIG);
-
-    await this._promisifyRequest(store.put({
-      key: key,
-      value: value,
-      updatedAt: new Date().toISOString()
-    }));
-  }
-
-  /**
-   * 📥 تحميل إعدادات
-   */
-  async loadConfig(key) {
-    await this.init();
-
-    const transaction = this.db.transaction([this.stores.CONFIG], 'readonly');
-    const store = transaction.objectStore(this.stores.CONFIG);
-
-    const record = await this._promisifyRequest(store.get(key));
-    return record ? record.value : null;
-  }
-
-  /**
-   * 💭 حفظ الذاكرة السياقية
-   */
-  async saveContext(contextData) {
-    await this.init();
-
-    const transaction = this.db.transaction([this.stores.CONTEXT], 'readwrite');
-    const store = transaction.objectStore(this.stores.CONTEXT);
-
-    await this._promisifyRequest(store.put({
-      id: 'current_context',
-      ...contextData,
-      updatedAt: new Date().toISOString()
-    }));
-  }
-
-  /**
-   * 📥 تحميل الذاكرة السياقية
-   */
-  async loadContext() {
-    await this.init();
-
-    const transaction = this.db.transaction([this.stores.CONTEXT], 'readonly');
-    const store = transaction.objectStore(this.stores.CONTEXT);
-
-    const record = await this._promisifyRequest(store.get('current_context'));
-    return record || null;
-  }
-
-  /**
-   * 🧹 تنظيف الذاكرة السياقية
-   */
-  async clearContext() {
-    await this.init();
-
-    const transaction = this.db.transaction([this.stores.CONTEXT], 'readwrite');
-    const store = transaction.objectStore(this.stores.CONTEXT);
-
-    await this._promisifyRequest(store.delete('current_context'));
-  }
-
-  /**
-   * 📤 تصدير العقل الكامل (Brain Dump)
-   */
-  async exportBrain() {
-    await this.init();
-
-    const brain = {
-      version: this.version,
-      exportedAt: new Date().toISOString(),
-      databases: {},
-      metaIndex: {},
-      learned: [],
-      config: {}
-    };
-
-    // تصدير المتجهات
-    for (const dbName of ['activity', 'decision104', 'industrial']) {
-      brain.databases[dbName] = await this.loadVectorDatabase(dbName);
-    }
-
-    // تصدير الفهرس
-    brain.metaIndex = await this.loadMetaIndex();
-
-    // تصدير المعلومات المتعلمة
-    const learnedTx = this.db.transaction([this.stores.LEARNED], 'readonly');
-    brain.learned = await this._promisifyRequest(learnedTx.objectStore(this.stores.LEARNED).getAll());
-
-    // تصدير الإعدادات
-    const configTx = this.db.transaction([this.stores.CONFIG], 'readonly');
-    const configs = await this._promisifyRequest(configTx.objectStore(this.stores.CONFIG).getAll());
-    
-    for (const conf of configs) {
-      brain.config[conf.key] = conf.value;
-    }
-
-    console.log('📤 تم تصدير العقل الكامل');
-    return brain;
-  }
-
-  /**
-   * 📥 استيراد العقل (Brain Import)
-   */
-  async importBrain(brainData) {
-    await this.init();
-
-    console.log('📥 بدء استيراد العقل...');
+  async importAllData(data) {
+    console.log('📥 استيراد البيانات...');
 
     // استيراد المتجهات
-    for (const [dbName, dbData] of Object.entries(brainData.databases || {})) {
-      await this.saveVectorDatabase(dbName, dbData);
+    for (const [dbName, records] of Object.entries(data.vectors)) {
+      await this.saveVectorDatabase(dbName, records);
     }
 
     // استيراد الفهرس
-    if (brainData.metaIndex) {
-      await this.saveMetaIndex(brainData.metaIndex);
+    if (data.metaIndex) {
+      await this.saveMetaIndex(data.metaIndex);
     }
 
-    // استيراد المعلومات المتعلمة
-    if (brainData.learned && Array.isArray(brainData.learned)) {
-      const transaction = this.db.transaction([this.stores.LEARNED], 'readwrite');
-      const store = transaction.objectStore(this.stores.LEARNED);
-      
-      for (const learned of brainData.learned) {
-        await this._promisifyRequest(store.add(learned));
-      }
-    }
-
-    // استيراد الإعدادات
-    if (brainData.config) {
-      for (const [key, value] of Object.entries(brainData.config)) {
-        await this.saveConfig(key, value);
-      }
-    }
-
-    console.log('✅ اكتمل استيراد العقل');
+    console.log('✅ تم استيراد البيانات بنجاح');
   }
 
   /**
-   * 🗑️ مسح قاعدة بيانات محددة
+   * تصدير مخزن كامل
    */
-  async _clearByDatabase(databaseName) {
-    const transaction = this.db.transaction([this.stores.VECTORS], 'readwrite');
-    const store = transaction.objectStore(this.stores.VECTORS);
-    const index = store.index('database');
-
-    const records = await this._promisifyRequest(index.getAllKeys(databaseName));
-    
-    const promises = records.map(key => this._promisifyRequest(store.delete(key)));
-    await Promise.all(promises);
-  }
-
-  /**
-   * 🧹 مسح كل شيء
-   */
-  async clearAll() {
-    await this.init();
-
-    const stores = Object.values(this.stores);
-    const transaction = this.db.transaction(stores, 'readwrite');
-
-    const promises = stores.map(storeName => 
-      this._promisifyRequest(transaction.objectStore(storeName).clear())
-    );
-
-    await Promise.all(promises);
-    console.log('🧹 تم مسح جميع البيانات');
-  }
-
-  /**
-   * 📊 الحصول على إحصائيات
-   */
-  async getStatistics() {
-    await this.init();
-
-    const stats = {
-      vectorDatabases: {},
-      metaIndexSize: 0,
-      learnedCount: 0,
-      configCount: 0
-    };
-
-    // إحصائيات المتجهات
-    for (const dbName of ['activity', 'decision104', 'industrial']) {
-      const db = await this.loadVectorDatabase(dbName);
-      stats.vectorDatabases[dbName] = db?.data?.length || 0;
-    }
-
-    // حجم الفهرس
-    const metaIndex = await this.loadMetaIndex();
-    stats.metaIndexSize = Object.keys(metaIndex).length;
-
-    // عدد المعلومات المتعلمة
-    const learnedTx = this.db.transaction([this.stores.LEARNED], 'readonly');
-    const learned = await this._promisifyRequest(learnedTx.objectStore(this.stores.LEARNED).getAll());
-    stats.learnedCount = learned.length;
-
-    // عدد الإعدادات
-    const configTx = this.db.transaction([this.stores.CONFIG], 'readonly');
-    const configs = await this._promisifyRequest(configTx.objectStore(this.stores.CONFIG).getAll());
-    stats.configCount = configs.length;
-
-    return stats;
-  }
-
-  /**
-   * 🔧 تحويل Request إلى Promise
-   */
-  _promisifyRequest(request) {
+  async _exportStore(storeName) {
     return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([storeName], 'readonly');
+      const store = transaction.objectStore(storeName);
+      const request = store.getAll();
+
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
   }
 
   /**
-   * 🚪 إغلاق قاعدة البيانات
+   * حذف جميع البيانات
+   */
+  async clearAll() {
+    const storeNames = Object.values(this.stores);
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(storeNames, 'readwrite');
+
+      transaction.oncomplete = () => {
+        console.log('🗑️ تم حذف جميع البيانات');
+        resolve();
+      };
+
+      transaction.onerror = () => {
+        console.error('❌ فشل حذف البيانات:', transaction.error);
+        reject(transaction.error);
+      };
+
+      storeNames.forEach(storeName => {
+        transaction.objectStore(storeName).clear();
+      });
+    });
+  }
+
+  /**
+   * إغلاق قاعدة البيانات
    */
   close() {
     if (this.db) {
       this.db.close();
       this.db = null;
-      this.initialized = false;
-      console.log('🚪 تم إغلاق قاعدة البيانات');
+      console.log('🔒 تم إغلاق قاعدة البيانات');
     }
   }
 }
 
-// تصدير الكلاس
+// التصدير
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = IndexedDBManager;
-
 }
