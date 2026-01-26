@@ -1,22 +1,17 @@
 /**
- * 🎨 متحكم الواجهة
- * UI Controller
+ * 🎨 متحكم الواجهة - النسخة المحسنة
+ * UI Controller - Enhanced with Thinking Indicator
  * 
- * الهدف: إدارة واجهة المساعد الذكي والتفاعلات
- * 
- * @author AI Expert System
- * @version 2.0.0
+ * @version 3.0.0 - Fixed
  */
 
 class UIController {
   constructor(aiCore, voiceHandler, typewriterEffect, responseGenerator) {
-    // المكونات
     this.aiCore = aiCore;
     this.voiceHandler = voiceHandler;
     this.typewriter = typewriterEffect;
     this.responseGenerator = responseGenerator;
 
-    // عناصر الواجهة
     this.elements = {
       floatingIcon: null,
       assistantPanel: null,
@@ -32,47 +27,31 @@ class UIController {
       importButton: null
     };
 
-    // الحالة
     this.isOpen = false;
     this.isMuted = false;
     this.isDragging = false;
-    this.dragOffset = { x: 0, y: 0 };
 
-    // الإعدادات
     this.config = {
       enableVoice: true,
       enableTypewriter: true,
       maxMessages: 50
     };
 
-    // سجل الرسائل
     this.messages = [];
+    this.currentThinkingIndicator = null;
   }
 
-  /**
-   * 🚀 تهيئة الواجهة
-   */
   async initialize() {
     console.log('🎨 تهيئة واجهة المستخدم...');
 
-    // إنشاء الأيقونة العائمة
     this._createFloatingIcon();
-
-    // إنشاء لوحة المساعد
     this._createAssistantPanel();
-
-    // ربط الأحداث
     this._bindEvents();
-
-    // تحميل الحالة المحفوظة
     await this._loadSavedState();
 
     console.log('✅ تم تهيئة الواجهة');
   }
 
-  /**
-   * 🎯 إنشاء الأيقونة العائمة
-   */
   _createFloatingIcon() {
     const icon = document.createElement('div');
     icon.id = 'ai-assistant-icon';
@@ -89,19 +68,12 @@ class UIController {
       <div class="icon-badge">AI</div>
     `;
 
-    // إضافة tooltip
     icon.title = 'مساعد الهيئة الذكي - اضغط للفتح';
-
     document.body.appendChild(icon);
     this.elements.floatingIcon = icon;
-
-    // جعل الأيقونة قابلة للسحب
     this._makeDraggable(icon);
   }
 
-  /**
-   * 🏗️ إنشاء لوحة المساعد
-   */
   _createAssistantPanel() {
     const panel = document.createElement('div');
     panel.id = 'ai-assistant-panel';
@@ -159,13 +131,13 @@ class UIController {
       <div class="assistant-body">
         <div id="ai-messages-container" class="messages-container">
           <div class="welcome-message">
-            <div class="ai-avatar">🤖</div>
+            <div class="message-avatar">🤖</div>
             <div class="message-content">
               <p><strong>مرحباً بك في مساعد الهيئة الذكي!</strong></p>
               <p>أنا هنا لمساعدتك في الإجابة على أسئلتك حول:</p>
               <ul>
                 <li>📋 الأنشطة الاستثمارية والتراخيص</li>
-                <li>📍 المناطق الصناعية ومواقعها</li>
+                <li>🏭 المناطق الصناعية ومواقعها</li>
                 <li>🎁 حوافز القرار 104</li>
                 <li>🏛️ الجهات المختصة والإجراءات</li>
               </ul>
@@ -225,7 +197,6 @@ class UIController {
     document.body.appendChild(panel);
     this.elements.assistantPanel = panel;
 
-    // حفظ المراجع للعناصر
     this.elements.messagesContainer = panel.querySelector('#ai-messages-container');
     this.elements.inputField = panel.querySelector('#ai-input-field');
     this.elements.sendButton = panel.querySelector('#ai-send-btn');
@@ -237,18 +208,11 @@ class UIController {
     this.elements.exportButton = panel.querySelector('#ai-export-btn');
     this.elements.importButton = panel.querySelector('#ai-import-btn');
 
-    // Auto-resize textarea
     this._setupAutoResize();
   }
 
-  /**
-   * 🔗 ربط الأحداث
-   */
   _bindEvents() {
-    // الأيقونة العائمة
     this.elements.floatingIcon.addEventListener('click', () => this.togglePanel());
-
-    // أزرار التحكم
     this.elements.sendButton.addEventListener('click', () => this.sendMessage());
     this.elements.voiceButton.addEventListener('click', () => this.toggleVoice());
     this.elements.muteButton.addEventListener('click', () => this.toggleMute());
@@ -258,7 +222,6 @@ class UIController {
     this.elements.exportButton.addEventListener('click', () => this.exportBrain());
     this.elements.importButton.addEventListener('click', () => this.importBrain());
 
-    // حقل الإدخال
     this.elements.inputField.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -266,11 +229,9 @@ class UIController {
       }
     });
 
-    // ملف الاستيراد
     const fileInput = document.getElementById('ai-import-file');
     fileInput.addEventListener('change', (e) => this._handleImport(e));
 
-    // Voice Handler Events
     if (this.voiceHandler) {
       this.voiceHandler.onResult((text, confidence) => {
         this.elements.inputField.value = text;
@@ -291,9 +252,6 @@ class UIController {
     }
   }
 
-  /**
-   * 🎭 جعل العنصر قابل للسحب
-   */
   _makeDraggable(element) {
     let isDragging = false;
     let startX, startY, initialX, initialY;
@@ -342,7 +300,6 @@ class UIController {
       let newX = initialX + deltaX;
       let newY = initialY + deltaY;
 
-      // قيود الحدود
       const maxX = window.innerWidth - element.offsetWidth;
       const maxY = window.innerHeight - element.offsetHeight;
 
@@ -366,9 +323,6 @@ class UIController {
     }
   }
 
-  /**
-   * 🔄 Auto-resize لحقل الإدخال
-   */
   _setupAutoResize() {
     const field = this.elements.inputField;
     
@@ -378,397 +332,424 @@ class UIController {
     });
   }
 
-  /**
-   * 📤 إرسال رسالة
-   */
-  async sendMessage() {
-    const message = this.elements.inputField.value.trim();
-    
-    if (!message) {
-      return;
-    }
+  // 🤔 إظهار مؤشر التفكير
+  showThinkingIndicator(stage = 'thinking') {
+    this.hideThinkingIndicator();
 
-    // عرض رسالة المستخدم
-    this.addMessage(message, 'user');
-
-    // مسح حقل الإدخال
-    this.elements.inputField.value = '';
-    this.elements.inputField.style.height = 'auto';
-
-    // إظهار مؤشر الكتابة
-    this.showTypingIndicator();
-
-    try {
-      // معالجة الاستعلام
-      const response = await this.aiCore.processQuery(message, { isVoice: false });
-
-      // إخفاء مؤشر الكتابة
-      this.hideTypingIndicator();
-
-      // عرض الرد
-      if (response.success) {
-        const formattedResponse = this.responseGenerator.generateResponse(
-          response,
-          null,
-          message
-        );
-        
-        await this.addMessage(formattedResponse.text, 'assistant', {
-          html: formattedResponse.html,
-          links: formattedResponse.links,
-          useTypewriter: this.config.enableTypewriter
-        });
-
-        // النطق الصوتي
-        if (this.config.enableVoice && !this.isMuted) {
-          this.voiceHandler.speak(formattedResponse.text);
-        }
-      } else {
-        this.addMessage(response.message || 'عذراً، حدث خطأ', 'assistant');
-      }
-
-    } catch (error) {
-      console.error('❌ خطأ في المعالجة:', error);
-      this.hideTypingIndicator();
-      this.addMessage('عذراً، حدث خطأ غير متوقع. حاول مرة أخرى.', 'assistant');
-    }
-  }
-
-  /**
-   * 💬 إضافة رسالة إلى المحادثة
-   */
-  async addMessage(content, sender, options = {}) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${sender}-message`;
-
-    const avatar = document.createElement('div');
-    avatar.className = 'message-avatar';
-    avatar.textContent = sender === 'user' ? '👤' : '🤖';
-
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'message-content';
-
-    if (sender === 'user') {
-      contentDiv.textContent = content;
-      messageDiv.appendChild(avatar);
-      messageDiv.appendChild(contentDiv);
-    } else {
-      messageDiv.appendChild(avatar);
-      messageDiv.appendChild(contentDiv);
-
-      // استخدام تأثير الكتابة
-      if (options.useTypewriter && this.typewriter) {
-        await this.typewriter.type(contentDiv, options.html || content, {
-          html: !!options.html,
-          speed: 30,
-          random: true
-        });
-      } else {
-        if (options.html) {
-          contentDiv.innerHTML = options.html;
-        } else {
-          contentDiv.textContent = content;
-        }
-      }
-    }
-
-    this.elements.messagesContainer.appendChild(messageDiv);
-    this.messages.push({ sender, content, timestamp: new Date() });
-
-    // Scroll to bottom
-    this.scrollToBottom();
-
-    // حذف الرسائل القديمة
-    if (this.messages.length > this.config.maxMessages) {
-      const oldMessage = this.elements.messagesContainer.querySelector('.message');
-      if (oldMessage) {
-        oldMessage.remove();
-      }
-      this.messages.shift();
-    }
-  }
-
-  /**
-   * ⌨️ إظهار مؤشر الكتابة
-   */
-  showTypingIndicator() {
-    const existing = this.elements.messagesContainer.querySelector('.typing-indicator');
-    if (existing) return;
+    const stageMessages = {
+      thinking: '🤔 جاري التفكير...',
+      analyzing: '🔍 تحليل السؤال...',
+      searching: '🔎 البحث في قواعد البيانات...',
+      processing: '⚙️ معالجة النتائج...',
+      generating: '✍️ تجهيز الإجابة...'
+    };
 
     const indicator = document.createElement('div');
-    indicator.className = 'message assistant-message typing-indicator';
+    indicator.className = 'message assistant-message thinking-indicator';
     indicator.innerHTML = `
       <div class="message-avatar">🤖</div>
       <div class="message-content">
-        <div class="typing-dots">
-          <span></span>
-          <span></span>
-          <span></span>
+        <div class="thinking-content">
+          <div class="thinking-dots">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+          <div class="thinking-text">${stageMessages[stage] || stageMessages.thinking}</div>
         </div>
       </div>
     `;
 
     this.elements.messagesContainer.appendChild(indicator);
+    this.currentThinkingIndicator = indicator;
     this.scrollToBottom();
   }
 
-  /**
-   * 🚫 إخفاء مؤشر الكتابة
-   */
-  hideTypingIndicator() {
-    const indicator = this.elements.messagesContainer.querySelector('.typing-indicator');
-    if (indicator) {
-      indicator.remove();
-    }
-  }
+  // 🎯 تحديث مرحلة التفكير
+  updateThinkingStage(stage) {
+    if (!this.currentThinkingIndicator) return;
 
-  /**
-   * 📜 Scroll to bottom
-   */
-  scrollToBottom() {
-    this.elements.messagesContainer.scrollTop = this.elements.messagesContainer.scrollHeight;
-  }
-
-  /**
-   * 🎤 تبديل حالة المايك
-   */
-  toggleVoice() {
-    if (!this.voiceHandler || !this.voiceHandler.isSupported) {
-      this.showNotification('المتصفح لا يدعم التعرف الصوتي', 'error');
-      return;
-    }
-
-    this.voiceHandler.toggleListening();
-  }
-
-  /**
-   * 🔇 تبديل كتم الصوت
-   */
-  toggleMute() {
-    this.isMuted = !this.isMuted;
-    
-    const unmutedIcon = this.elements.muteButton.querySelector('.icon-unmuted');
-    const mutedIcon = this.elements.muteButton.querySelector('.icon-muted');
-
-    if (this.isMuted) {
-      unmutedIcon.style.display = 'none';
-      mutedIcon.style.display = 'block';
-      this.elements.muteButton.classList.add('muted');
-      this.voiceHandler.stopSpeaking();
-      this.showNotification('تم كتم الصوت', 'info');
-    } else {
-      unmutedIcon.style.display = 'block';
-      mutedIcon.style.display = 'none';
-      this.elements.muteButton.classList.remove('muted');
-      this.showNotification('تم تشغيل الصوت', 'info');
-    }
-  }
-
-  /**
-   * 🔄 تحديث زر المايك
-   */
-  _updateVoiceButton(isActive) {
-    const micIcon = this.elements.voiceButton.querySelector('.icon-mic');
-    const micActiveIcon = this.elements.voiceButton.querySelector('.icon-mic-active');
-
-    if (isActive) {
-      micIcon.style.display = 'none';
-      micActiveIcon.style.display = 'block';
-      this.elements.voiceButton.classList.add('active');
-    } else {
-      micIcon.style.display = 'block';
-      micActiveIcon.style.display = 'none';
-      this.elements.voiceButton.classList.remove('active');
-    }
-  }
-
-  /**
-   * 🔄 تبديل حالة اللوحة
-   */
-  togglePanel() {
-    if (this.isOpen) {
-      this.closePanel();
-    } else {
-      this.openPanel();
-    }
-  }
-
-  /**
-   * ✅ فتح اللوحة
-   */
-  openPanel() {
-    this.elements.assistantPanel.style.display = 'flex';
-    this.elements.floatingIcon.classList.add('panel-open');
-    this.isOpen = true;
-    
-    setTimeout(() => {
-      this.elements.inputField.focus();
-    }, 300);
-  }
-
-  /**
-   * ❌ إغلاق اللوحة
-   */
-  closePanel() {
-    this.elements.assistantPanel.style.display = 'none';
-    this.elements.floatingIcon.classList.remove('panel-open');
-    this.isOpen = false;
-    
-    // إيقاف الصوت
-    if (this.voiceHandler) {
-      this.voiceHandler.stopListening();
-      this.voiceHandler.stopSpeaking();
-    }
-  }
-
-  /**
-   * ➖ تصغير اللوحة
-   */
-  minimizePanel() {
-    this.closePanel();
-  }
-
-  /**
-   * 🗑️ مسح المحادثة
-   */
-  async clearChat() {
-    if (!confirm('هل تريد مسح المحادثة؟')) {
-      return;
-    }
-
-    // حذف جميع الرسائل ما عدا الترحيب
-    const messages = this.elements.messagesContainer.querySelectorAll('.message:not(.welcome-message)');
-    messages.forEach(msg => msg.remove());
-
-    this.messages = [];
-    
-    // مسح السياق
-    await this.aiCore.clearContext();
-
-    this.showNotification('تم مسح المحادثة', 'success');
-  }
-
-  /**
-   * 📤 تصدير العقل
-   */
-  async exportBrain() {
-    try {
-      await this.aiCore.exportBrain();
-      this.showNotification('تم تصدير الذاكرة بنجاح', 'success');
-    } catch (error) {
-      console.error('❌ خطأ في التصدير:', error);
-      this.showNotification('فشل التصدير', 'error');
-    }
-  }
-
-  /**
-   * 📥 استيراد العقل
-   */
-  importBrain() {
-    document.getElementById('ai-import-file').click();
-  }
-
-  /**
-   * 📂 معالجة ملف الاستيراد
-   */
-  async _handleImport(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    try {
-      await this.aiCore.importBrain(file);
-      this.showNotification('تم استيراد الذاكرة بنجاح', 'success');
-      
-      // إعادة تحميل الواجهة
-      window.location.reload();
-    } catch (error) {
-      console.error('❌ خطأ في الاستيراد:', error);
-      this.showNotification('فشل الاستيراد', 'error');
-    }
-
-    // مسح حقل الملف
-    event.target.value = '';
-  }
-
-  /**
-   * 📢 إظهار إشعار
-   */
-  showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `ai-notification ${type}`;
-    notification.textContent = message;
-
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-      notification.classList.add('show');
-    }, 10);
-
-    setTimeout(() => {
-      notification.classList.remove('show');
-      setTimeout(() => notification.remove(), 300);
-    }, 3000);
-  }
-
-  /**
-   * 💾 حفظ الحالة
-   */
-  async _saveState() {
-    const state = {
-      isOpen: this.isOpen,
-      isMuted: this.isMuted,
-      messages: this.messages.slice(-10) // آخر 10 رسائل
+    const stageMessages = {
+      thinking: '🤔 جاري التفكير...',
+      analyzing: '🔍 تحليل السؤال...',
+      searching: '🔎 البحث في قواعد البيانات...',
+      processing: '⚙️ معالجة النتائج...',
+      generating: '✍️ تجهيز الإجابة...'
     };
 
-    localStorage.setItem('ai_assistant_state', JSON.stringify(state));
-  }
-
-  /**
-   * 📥 تحميل الحالة المحفوظة
-   */
-  async _loadSavedState() {
-    try {
-      const saved = localStorage.getItem('ai_assistant_state');
-      if (saved) {
-        const state = JSON.parse(saved);
-        
-        if (state.isMuted) {
-          this.toggleMute();
-        }
-      }
-    } catch (error) {
-      console.error('خطأ في تحميل الحالة:', error);
+    const textEl = this.currentThinkingIndicator.querySelector('.thinking-text');
+    if (textEl) {
+      textEl.textContent = stageMessages[stage] || stageMessages.thinking;
     }
   }
 
-  /**
-   * 🧹 تنظيف
-   */
-  destroy() {
+  // ❌ إخفاء مؤشر التفكير
+  hideThinkingIndicator() {
+    if (this.currentThinkingIndicator) {
+      this.currentThinkingIndicator.classList.add('fade-out');
+      setTimeout(() => {
+        if (this.currentThinkingIndicator && this.currentThinkingIndicator.parentNode) {
+          this.currentThinkingIndicator.remove();
+        }
+        this.currentThinkingIndicator = null;
+      }, 300);
+    }
+  }
 
-// إيقاف الصوت
-
-if (this.voiceHandler) {
-
-this.voiceHandler.destroy();
-
+  // باقي المشروع في الجزء الثاني...
 }
-  // إيقاف الكتابة
-if (this.typewriter) {
-  this.typewriter.stop();
-}
+/**
+ * 🎨 متحكم الواجهة - الجزء 2
+ * UI Controller - Part 2 (Remaining Functions)
+ */
 
-// حفظ الحالة
-this._saveState();
+// 📤 إرسال رسالة (محسّن مع مؤشر التفكير)
+UIController.prototype.sendMessage = async function() {
+  const message = this.elements.inputField.value.trim();
+  
+  if (!message) {
+    return;
+  }
 
-// حذف العناصر
-if (this.elements.floatingIcon) {
-  this.elements.floatingIcon.remove();
-}
-if (this.elements.assistantPanel) {
-  this.elements.assistantPanel.remove();
-}
+  this.addMessage(message, 'user');
+  this.elements.inputField.value = '';
+  this.elements.inputField.style.height = 'auto';
 
-console.log('🧹 تم تنظيف الواجهة');
-}
+  // 🤔 إظهار مؤشر التفكير بدلاً من مؤشر الكتابة القديم
+  this.showThinkingIndicator('analyzing');
+
+  // تأخير بسيط لإظهار المؤشر
+  await new Promise(resolve => setTimeout(resolve, 300));
+
+  try {
+    // تحديث المراحل أثناء المعالجة
+    this.updateThinkingStage('searching');
+    
+    const response = await this.aiCore.processQuery(message, { isVoice: false });
+
+    this.updateThinkingStage('generating');
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    this.hideThinkingIndicator();
+
+    if (response.success) {
+      const formattedResponse = this.responseGenerator.generateResponse(
+        response,
+        null,
+        message
+      );
+      
+      await this.addMessage(formattedResponse.text, 'assistant', {
+        html: formattedResponse.html,
+        links: formattedResponse.links,
+        useTypewriter: this.config.enableTypewriter
+      });
+
+      if (this.config.enableVoice && !this.isMuted && this.voiceHandler) {
+        this.voiceHandler.speak(formattedResponse.text);
+      }
+    } else {
+      this.addMessage(response.message || 'عذراً، حدث خطأ', 'assistant');
+    }
+
+  } catch (error) {
+    console.error('❌ خطأ في المعالجة:', error);
+    this.hideThinkingIndicator();
+    this.addMessage('عذراً، حدث خطأ غير متوقع. حاول مرة أخرى.', 'assistant');
+  }
+};
+
+// 💬 إضافة رسالة
+UIController.prototype.addMessage = async function(content, sender, options = {}) {
+  const messageDiv = document.createElement('div');
+  messageDiv.className = `message ${sender}-message`;
+
+  const avatar = document.createElement('div');
+  avatar.className = 'message-avatar';
+  avatar.textContent = sender === 'user' ? '👤' : '🤖';
+
+  const contentDiv = document.createElement('div');
+  contentDiv.className = 'message-content';
+
+  if (sender === 'user') {
+    contentDiv.textContent = content;
+    messageDiv.appendChild(avatar);
+    messageDiv.appendChild(contentDiv);
+  } else {
+    messageDiv.appendChild(avatar);
+    messageDiv.appendChild(contentDiv);
+
+    if (options.useTypewriter && this.typewriter) {
+      await this.typewriter.type(contentDiv, options.html || content, {
+        html: !!options.html,
+        speed: 30,
+        random: true
+      });
+    } else {
+      if (options.html) {
+        contentDiv.innerHTML = options.html;
+      } else {
+        contentDiv.textContent = content;
+      }
+    }
+  }
+
+  this.elements.messagesContainer.appendChild(messageDiv);
+  this.messages.push({ sender, content, timestamp: new Date() });
+
+  this.scrollToBottom();
+
+  if (this.messages.length > this.config.maxMessages) {
+    const oldMessage = this.elements.messagesContainer.querySelector('.message');
+    if (oldMessage && !oldMessage.classList.contains('welcome-message')) {
+      oldMessage.remove();
+    }
+    this.messages.shift();
+  }
+};
+
+// ⌨️ مؤشر الكتابة القديم (للتوافق)
+UIController.prototype.showTypingIndicator = function() {
+  const existing = this.elements.messagesContainer.querySelector('.typing-indicator');
+  if (existing) return;
+
+  const indicator = document.createElement('div');
+  indicator.className = 'message assistant-message typing-indicator';
+  indicator.innerHTML = `
+    <div class="message-avatar">🤖</div>
+    <div class="message-content">
+      <div class="typing-dots">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  `;
+
+  this.elements.messagesContainer.appendChild(indicator);
+  this.scrollToBottom();
+};
+
+UIController.prototype.hideTypingIndicator = function() {
+  const indicator = this.elements.messagesContainer.querySelector('.typing-indicator');
+  if (indicator) {
+    indicator.remove();
+  }
+};
+
+// 📜 Scroll to bottom
+UIController.prototype.scrollToBottom = function() {
+  this.elements.messagesContainer.scrollTop = this.elements.messagesContainer.scrollHeight;
+};
+
+// 🎤 تبديل حالة المايك
+UIController.prototype.toggleVoice = function() {
+  if (!this.voiceHandler || !this.voiceHandler.isSupported) {
+    this.showNotification('المتصفح لا يدعم التعرف الصوتي', 'error');
+    return;
+  }
+
+  this.voiceHandler.toggleListening();
+};
+
+// 🔇 تبديل كتم الصوت
+UIController.prototype.toggleMute = function() {
+  this.isMuted = !this.isMuted;
+  
+  const unmutedIcon = this.elements.muteButton.querySelector('.icon-unmuted');
+  const mutedIcon = this.elements.muteButton.querySelector('.icon-muted');
+
+  if (this.isMuted) {
+    unmutedIcon.style.display = 'none';
+    mutedIcon.style.display = 'block';
+    this.elements.muteButton.classList.add('muted');
+    if (this.voiceHandler) {
+      this.voiceHandler.stopSpeaking();
+    }
+    this.showNotification('تم كتم الصوت', 'info');
+  } else {
+    unmutedIcon.style.display = 'block';
+    mutedIcon.style.display = 'none';
+    this.elements.muteButton.classList.remove('muted');
+    this.showNotification('تم تشغيل الصوت', 'info');
+  }
+};
+
+// 🔄 تحديث زر المايك
+UIController.prototype._updateVoiceButton = function(isActive) {
+  const micIcon = this.elements.voiceButton.querySelector('.icon-mic');
+  const micActiveIcon = this.elements.voiceButton.querySelector('.icon-mic-active');
+
+  if (isActive) {
+    micIcon.style.display = 'none';
+    micActiveIcon.style.display = 'block';
+    this.elements.voiceButton.classList.add('active');
+  } else {
+    micIcon.style.display = 'block';
+    micActiveIcon.style.display = 'none';
+    this.elements.voiceButton.classList.remove('active');
+  }
+};
+
+// 🔄 تبديل حالة اللوحة
+UIController.prototype.togglePanel = function() {
+  if (this.isOpen) {
+    this.closePanel();
+  } else {
+    this.openPanel();
+  }
+};
+
+// ✅ فتح اللوحة
+UIController.prototype.openPanel = function() {
+  this.elements.assistantPanel.style.display = 'flex';
+  this.elements.floatingIcon.classList.add('panel-open');
+  this.isOpen = true;
+  
+  setTimeout(() => {
+    this.elements.inputField.focus();
+  }, 300);
+};
+
+// ❌ إغلاق اللوحة
+UIController.prototype.closePanel = function() {
+  this.elements.assistantPanel.style.display = 'none';
+  this.elements.floatingIcon.classList.remove('panel-open');
+  this.isOpen = false;
+  
+  if (this.voiceHandler) {
+    this.voiceHandler.stopListening();
+    this.voiceHandler.stopSpeaking();
+  }
+};
+
+// ➖ تصغير اللوحة
+UIController.prototype.minimizePanel = function() {
+  this.closePanel();
+};
+
+// 🗑️ مسح المحادثة
+UIController.prototype.clearChat = async function() {
+  if (!confirm('هل تريد مسح المحادثة؟')) {
+    return;
+  }
+
+  const messages = this.elements.messagesContainer.querySelectorAll('.message:not(.welcome-message)');
+  messages.forEach(msg => msg.remove());
+
+  this.messages = [];
+  
+  await this.aiCore.clearContext();
+
+  this.showNotification('تم مسح المحادثة', 'success');
+};
+
+// 📤 تصدير العقل
+UIController.prototype.exportBrain = async function() {
+  try {
+    await this.aiCore.exportBrain();
+    this.showNotification('تم تصدير الذاكرة بنجاح', 'success');
+  } catch (error) {
+    console.error('❌ خطأ في التصدير:', error);
+    this.showNotification('فشل التصدير', 'error');
+  }
+};
+
+// 📥 استيراد العقل
+UIController.prototype.importBrain = function() {
+  document.getElementById('ai-import-file').click();
+};
+
+// 📂 معالجة ملف الاستيراد
+UIController.prototype._handleImport = async function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  try {
+    await this.aiCore.importBrain(file);
+    this.showNotification('تم استيراد الذاكرة بنجاح', 'success');
+    
+    window.location.reload();
+  } catch (error) {
+    console.error('❌ خطأ في الاستيراد:', error);
+    this.showNotification('فشل الاستيراد', 'error');
+  }
+
+  event.target.value = '';
+};
+
+// 📢 إظهار إشعار
+UIController.prototype.showNotification = function(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `ai-notification ${type}`;
+  notification.textContent = message;
+
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    notification.classList.add('show');
+  }, 10);
+
+  setTimeout(() => {
+    notification.classList.remove('show');
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+};
+
+// 💾 حفظ الحالة
+UIController.prototype._saveState = async function() {
+  const state = {
+    isOpen: this.isOpen,
+    isMuted: this.isMuted,
+    messages: this.messages.slice(-10)
+  };
+
+  try {
+    localStorage.setItem('ai_assistant_state', JSON.stringify(state));
+  } catch (error) {
+    console.warn('تعذر حفظ الحالة:', error);
+  }
+};
+
+// 📥 تحميل الحالة المحفوظة
+UIController.prototype._loadSavedState = async function() {
+  try {
+    const saved = localStorage.getItem('ai_assistant_state');
+    if (saved) {
+      const state = JSON.parse(saved);
+      
+      if (state.isMuted) {
+        this.toggleMute();
+      }
+    }
+  } catch (error) {
+    console.warn('تعذر تحميل الحالة:', error);
+  }
+};
+
+// 🧹 تنظيف
+UIController.prototype.destroy = function() {
+  if (this.voiceHandler) {
+    this.voiceHandler.destroy();
+  }
+
+  if (this.typewriter) {
+    this.typewriter.stop();
+  }
+
+  this._saveState();
+
+  if (this.elements.floatingIcon) {
+    this.elements.floatingIcon.remove();
+  }
+  if (this.elements.assistantPanel) {
+    this.elements.assistantPanel.remove();
+  }
+
+  console.log('🧹 تم تنظيف الواجهة');
+};
+
+// تصدير الكلاس
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = UIController;
 }
