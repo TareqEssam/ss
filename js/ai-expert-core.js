@@ -59,77 +59,88 @@ class AIExpertCore {
   }
 
   /**
-   * 🚀 التهيئة الكاملة للنظام
-   */
-  async initialize() {
-    if (this.initialized) {
-      console.log('✅ النظام مهيأ بالفعل');
-      return true;
-    }
-
-    console.log('🚀 بدء تهيئة المساعد الذكي...');
-    const startTime = performance.now();
-
-    try {
-      // 1. تهيئة المكونات الأساسية
-      console.log('📦 تهيئة المكونات الأساسية...');
-      this.normalizer = new ArabicNormalizer();
-      this.dbManager = new IndexedDBManager();
-      await this.dbManager.init();
-
-      // 2. التحقق من وجود بيانات محفوظة
-      console.log('🔍 فحص البيانات المحفوظة...');
-      const savedData = await this._checkSavedData();
-
-      if (savedData.exists) {
-        console.log('✅ تم العثور على بيانات محفوظة، التحميل...');
-        await this._loadSavedData();
-      } else {
-        console.log('📥 لا توجد بيانات محفوظة، تحميل من الملفات الأصلية...');
-        await this._loadFromSourceFiles();
-        await this._buildMetaIndex();
-        await this._saveAllData();
-      }
-
-      // 3. تهيئة محرك المتجهات
-      console.log('⚡ تهيئة محرك المتجهات...');
-      this.vectorEngine = new VectorEngine(this.normalizer);
-      await this.vectorEngine.loadDatabases(this.vectorDatabases);
-
-      // 4. تهيئة مصنف النوايا
-      console.log('🎯 تهيئة مصنف النوايا...');
-      this.intentClassifier = new IntentClassifier(this.normalizer, this.vectorEngine);
-      this.intentClassifier.loadKnownEntities(this.metaIndex);
-
-      // 5. تهيئة نظام التعلم
-      console.log('🧠 تهيئة نظام التعلم...');
-      this.learningSystem = new LearningSystem(this.dbManager, this.normalizer);
-      await this.learningSystem.initialize();
-
-      // 6. تهيئة محلل الاستعلامات
-      console.log('📝 تهيئة محلل الاستعلامات...');
-      this.queryParser = new QueryParser(this.normalizer, this.intentClassifier);
-
-      // 7. تحميل الذاكرة السياقية
-      const savedContext = await this.dbManager.loadContext();
-      if (savedContext) {
-        this.contextMemory = { ...this.contextMemory, ...savedContext };
-      }
-
-      this.initialized = true;
-      const totalTime = ((performance.now() - startTime) / 1000).toFixed(2);
-      
-      console.log('✅ اكتمل التهيئة بنجاح!');
-      console.log(`⏱️ الزمن الكلي: ${totalTime} ثانية`);
-      console.log('📊 الإحصائيات:', await this._getSystemStats());
-
-      return true;
-
-    } catch (error) {
-      console.error('❌ فشل التهيئة:', error);
-      return false;
-    }
+ * 🚀 التهيئة الكاملة للنظام
+ */
+async initialize() {
+  if (this.initialized) {
+    console.log('✅ النظام مهيأ بالفعل');
+    return true;
   }
+
+  console.log('🚀 بدء تهيئة المساعد الذكي...');
+  const startTime = performance.now();
+
+  try {
+    // 1. تهيئة المكونات الأساسية
+    console.log('📦 تهيئة المكونات الأساسية...');
+    this.normalizer = new ArabicNormalizer();
+    this.dbManager = new IndexedDBManager();
+    await this.dbManager.init();
+
+    // 2. التحقق من وجود بيانات محفوظة
+    console.log('🔍 فحص البيانات المحفوظة...');
+    const stats = await this.dbManager.getStatistics();
+    
+    const hasData = 
+      stats.vectorDatabases.activity > 0 ||
+      stats.vectorDatabases.decision104 > 0 ||
+      stats.vectorDatabases.industrial > 0;
+
+    if (hasData) {
+      console.log('✅ تم العثور على بيانات محفوظة، التحميل...');
+      await this._loadSavedData();
+    } else {
+      console.log('📥 لا توجد بيانات محفوظة، تحميل من الملفات الأصلية...');
+      await this._loadFromSourceFiles();
+      await this._buildMetaIndex();
+      await this._saveAllData();
+    }
+
+    // 3. تهيئة محرك المتجهات
+    console.log('⚡ تهيئة محرك المتجهات...');
+    this.vectorEngine = new VectorEngine(this.normalizer);
+    await this.vectorEngine.loadDatabases(this.vectorDatabases);
+
+    // 4. تهيئة مصنف النوايا
+    console.log('🎯 تهيئة مصنف النوايا...');
+    this.intentClassifier = new IntentClassifier(this.normalizer, this.vectorEngine);
+    this.intentClassifier.loadKnownEntities(this.metaIndex);
+
+    // 5. تهيئة نظام التعلم
+    console.log('🧠 تهيئة نظام التعلم...');
+    this.learningSystem = new LearningSystem(this.dbManager, this.normalizer);
+    await this.learningSystem.initialize();
+
+    // 6. تهيئة محلل الاستعلامات
+    console.log('🔍 تهيئة محلل الاستعلامات...');
+    this.queryParser = new QueryParser(this.normalizer, this.intentClassifier);
+
+    // 7. تحميل الذاكرة السياقية
+    const savedContext = await this.dbManager.loadContext();
+    if (savedContext) {
+      this.contextMemory = { ...this.contextMemory, ...savedContext };
+    }
+
+    this.initialized = true;
+    const totalTime = ((performance.now() - startTime) / 1000).toFixed(2);
+    
+    console.log('✅ اكتمل التهيئة بنجاح!');
+    console.log(`⏱️ الزمن الكلي: ${totalTime} ثانية`);
+    console.log('📊 الإحصائيات:', {
+      activity: this.vectorDatabases.activity?.data?.length || 0,
+      decision104: this.vectorDatabases.decision104?.data?.length || 0,
+      industrial: this.vectorDatabases.industrial?.data?.length || 0,
+      metaIndex: Object.keys(this.metaIndex).length
+    });
+
+    return true;
+
+  } catch (error) {
+    console.error('❌ فشل التهيئة:', error);
+    this.initialized = false;
+    return false;
+  }
+}
 
   /**
    * 💬 معالجة استعلام المستخدم (النقطة المركزية)
@@ -919,106 +930,130 @@ class AIExpertCore {
   }
 
   /**
-   * 📥 تحميل البيانات المحفوظة
-   */
-  async _loadSavedData() {
-    console.log('📥 تحميل البيانات من IndexedDB...');
+ * 📥 تحميل البيانات المحفوظة
+ */
+async _loadSavedData() {
+  console.log('📥 تحميل البيانات من IndexedDB...');
 
-    this.vectorDatabases.activity = await this.dbManager.loadVectorDatabase('activity');
-    this.vectorDatabases.decision104 = await this.dbManager.loadVectorDatabase('decision104');
-    this.vectorDatabases.industrial = await this.dbManager.loadVectorDatabase('industrial');
+  const activityData = await this.dbManager.loadVectorDatabase('activity');
+  const decision104Data = await this.dbManager.loadVectorDatabase('decision104');
+  const industrialData = await this.dbManager.loadVectorDatabase('industrial');
 
-    const metaIndex = await this.dbManager.loadMetaIndex();
-    if (metaIndex) {
-      this.metaIndex = metaIndex;
-    }
+  // إعادة تكوين البيانات بالشكل الصحيح
+  this.vectorDatabases.activity = { data: activityData };
+  this.vectorDatabases.decision104 = { data: decision104Data };
+  this.vectorDatabases.industrial = { data: industrialData };
 
-    console.log('✅ تم تحميل البيانات المحفوظة');
+  const metaIndex = await this.dbManager.loadMetaIndex();
+  if (metaIndex && Object.keys(metaIndex).length > 0) {
+    this.metaIndex = metaIndex;
   }
 
-  /**
-   * 📂 تحميل من الملفات الأصلية
-   */
-  async _loadFromSourceFiles() {
-    console.log('📂 تحميل من الملفات الأصلية...');
+  console.log('✅ تم تحميل البيانات المحفوظة');
+}
+ /**
+ * 📂 تحميل من الملفات الأصلية
+ */
+async _loadFromSourceFiles() {
+  console.log('📂 تحميل من الملفات الأصلية...');
 
-    try {
-      // تحميل المتجهات
-      const activityVectors = await import('../data/activity_vectors.js');
-      const decision104Vectors = await import('../data/decision104_vectors.js');
-      const industrialVectors = await import('../data/industrial_vectors.js');
+  try {
+    // تحميل المتجهات من الملفات
+    const activityVectors = window.activityVectors || (await import('../data/activity_vectors.js')).default;
+    const decision104Vectors = window.decision104Vectors || (await import('../data/decision104_vectors.js')).default;
+    const industrialVectors = window.industrialVectors || (await import('../data/industrial_vectors.js')).default;
 
-      this.vectorDatabases.activity = activityVectors.default;
-      this.vectorDatabases.decision104 = decision104Vectors.default;
-      this.vectorDatabases.industrial = industrialVectors.default;
+    this.vectorDatabases.activity = activityVectors;
+    this.vectorDatabases.decision104 = decision104Vectors;
+    this.vectorDatabases.industrial = industrialVectors;
 
-      console.log('✅ تم تحميل الملفات الأصلية');
-    } catch (error) {
-      console.error('❌ فشل تحميل الملفات:', error);
-      throw error;
-    }
+    console.log('✅ تم تحميل الملفات الأصلية');
+  } catch (error) {
+    console.error('❌ فشل تحميل الملفات:', error);
+    throw error;
   }
+}
 
   /**
-   * 🗂️ بناء الفهرس
-   */
-  async _buildMetaIndex() {
-    console.log('🗂️ بناء الفهرس...');
+ * 🗂️ بناء الفهرس
+ */
+async _buildMetaIndex() {
+  console.log('🗂️ بناء الفهرس...');
 
-    const governorates = new Set();
-    const locations = new Set();
-    const activities = new Set();
-    const authorities = new Set();
+  const governorates = new Set();
+  const locations = new Set();
+  const activities = new Set();
+  const authorities = new Set();
 
-    // استخراج من المناطق الصناعية
-    if (this.vectorDatabases.industrial?.data) {
-      this.vectorDatabases.industrial.data.forEach(record => {
-        const data = record.original_data;
-        if (data.governorate) governorates.add(data.governorate);
-        if (data.name) locations.add(data.name);
-        if (data.dependency) authorities.add(data.dependency);
-      });
-    }
-
-    // استخراج من الأنشطة
-    if (this.vectorDatabases.activity?.data) {
-      this.vectorDatabases.activity.data.forEach(record => {
-        const preview = record.original_data.text_preview || '';
-        // استخراج كلمات مفتاحية
-        const words = this.normalizer.extractKeywords(preview);
-        words.forEach(word => activities.add(word));
-      });
-    }
-
-    this.metaIndex = {
-      governorates: Array.from(governorates),
-      locations: Array.from(locations),
-      activities: Array.from(activities).slice(0, 500), // الحد من الحجم
-      authorities: Array.from(authorities)
-    };
-
-    console.log('✅ تم بناء الفهرس:', {
-      governorates: this.metaIndex.governorates.length,
-      locations: this.metaIndex.locations.length,
-      activities: this.metaIndex.activities.length,
-      authorities: this.metaIndex.authorities.length
+  // استخراج من المناطق الصناعية
+  if (this.vectorDatabases.industrial?.data) {
+    this.vectorDatabases.industrial.data.forEach(record => {
+      const data = record.original_data;
+      if (data.governorate) governorates.add(data.governorate);
+      if (data.name) locations.add(data.name);
+      if (data.dependency) authorities.add(data.dependency);
     });
   }
 
-  /**
-   * 💾 حفظ جميع البيانات
-   */
-  async _saveAllData() {
-    console.log('💾 حفظ البيانات في IndexedDB...');
-
-    await this.dbManager.saveVectorDatabase('activity', this.vectorDatabases.activity);
-    await this.dbManager.saveVectorDatabase('decision104', this.vectorDatabases.decision104);
-    await this.dbManager.saveVectorDatabase('industrial', this.vectorDatabases.industrial);
-    await this.dbManager.saveMetaIndex(this.metaIndex);
-
-    console.log('✅ تم حفظ جميع البيانات');
+  // استخراج من الأنشطة
+  if (this.vectorDatabases.activity?.data) {
+    this.vectorDatabases.activity.data.forEach(record => {
+      const preview = record.original_data?.text_preview || '';
+      if (preview) {
+        // استخراج كلمات مفتاحية بسيطة
+        const words = this.normalizer.normalize(preview)
+          .split(/\s+/)
+          .filter(w => w.length > 3);
+        words.slice(0, 5).forEach(word => activities.add(word));
+      }
+    });
   }
 
+  this.metaIndex = {
+    governorates: Array.from(governorates),
+    locations: Array.from(locations),
+    activities: Array.from(activities).slice(0, 500),
+    authorities: Array.from(authorities)
+  };
+
+  console.log('✅ تم بناء الفهرس:', {
+    governorates: this.metaIndex.governorates.length,
+    locations: this.metaIndex.locations.length,
+    activities: this.metaIndex.activities.length,
+    authorities: this.metaIndex.authorities.length
+  });
+}
+  /**
+ * 💾 حفظ جميع البيانات (مُحسّنة)
+ */
+async _saveAllData() {
+  console.log('💾 حفظ البيانات في IndexedDB...');
+
+  try {
+    // حفظ المتجهات بشكل متسلسل
+    if (this.vectorDatabases.activity?.data) {
+      await this.dbManager.saveVectorDatabase('activity', this.vectorDatabases.activity.data);
+    }
+
+    if (this.vectorDatabases.decision104?.data) {
+      await this.dbManager.saveVectorDatabase('decision104', this.vectorDatabases.decision104.data);
+    }
+
+    if (this.vectorDatabases.industrial?.data) {
+      await this.dbManager.saveVectorDatabase('industrial', this.vectorDatabases.industrial.data);
+    }
+
+    // حفظ الفهرس
+    if (this.metaIndex && Object.keys(this.metaIndex).length > 0) {
+      await this.dbManager.saveMetaIndex(this.metaIndex);
+    }
+
+    console.log('✅ تم حفظ جميع البيانات بنجاح');
+  } catch (error) {
+    console.error('❌ خطأ في حفظ البيانات:', error);
+    throw error;
+  }
+}
   /**
    * 📊 الحصول على إحصائيات النظام
    */
@@ -1123,3 +1158,4 @@ class AIExpertCore {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = AIExpertCore;
 }
+
