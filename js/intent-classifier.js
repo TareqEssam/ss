@@ -1,11 +1,9 @@
 /**
- * 🎯 مصنف النوايا الذكي
- * Intent Classifier & Query Understanding
- * 
- * الهدف: فهم نية المستخدم من السؤال (بدون كلمات مفتاحية صريحة)
+ * 🎯 مصنف النوايا الذكي - النسخة المُصلحة
+ * Intent Classifier - Fixed Version
  * 
  * @author AI Expert System
- * @version 2.0.0
+ * @version 3.0.0 - Fixed
  */
 
 class IntentClassifier {
@@ -13,69 +11,66 @@ class IntentClassifier {
     this.normalizer = arabicNormalizer;
     this.vectorEngine = vectorEngine;
 
-    // أنماط النوايا (Intent Patterns) - للتعرف الأولي
     this.intentPatterns = {
-      // نية قانونية (القوانين والتراخيص)
       legal: {
-        semantic: ['قانون', 'ترخيص', 'رخصة', 'تصريح', 'سجل', 'اشتراطات', 'متطلبات', 'جهة', 'وزارة', 'هيئة'],
+        semantic: ['قانون', 'ترخيص', 'رخصة', 'تصريح', 'سجل', 'اشتراطات', 'متطلبات', 'جهة', 'وزارة', 'هيئة', 'مستندات', 'أوراق'],
         weight: 1.0
       },
-
-      // نية جغرافية (المواقع والمناطق)
       geographic: {
-        semantic: ['منطقة', 'موقع', 'مكان', 'محافظة', 'مدينة', 'قرية', 'حي', 'خريطة', 'موجود', 'تابع'],
+        semantic: ['منطقة', 'موقع', 'مكان', 'محافظة', 'مدينة', 'قرية', 'حي', 'خريطة', 'موجود', 'تابع', 'عنوان'],
         weight: 1.0
       },
-
-      // نية تقنية (الاشتراطات الفنية)
       technical: {
         semantic: ['اشتراطات', 'فنية', 'معاينة', 'فحص', 'مواصفات', 'معايير', 'سلامة', 'حماية', 'مدني'],
         weight: 1.0
       },
-
-      // نية الحوافز
       incentive: {
-        semantic: ['حوافز', 'قرار', '104', 'دعم', 'إعفاء', 'تخفيض', 'مزايا', 'قطاع'],
+        semantic: ['حوافز', 'قرار', '104', 'دعم', 'إعفاء', 'تخفيض', 'مزايا', 'قطاع', 'تسهيلات'],
         weight: 1.0
       },
-
-      // نية إحصائية
       statistical: {
-        semantic: ['كم', 'عدد', 'عدد', 'كام', 'إحصائية', 'جميع', 'كل', 'قائمة', 'أسماء'],
+        semantic: ['كم', 'عدد', 'كام', 'إحصائية', 'جميع', 'كل', 'قائمة', 'أسماء', 'توزيع'],
         weight: 1.0
       },
-
-      // نية مقارنة
       comparative: {
-        semantic: ['فرق', 'مقارنة', 'أفضل', 'أحسن', 'الأنسب', 'بين', 'مقابل', 'ولا'],
+        semantic: ['فرق', 'مقارنة', 'أفضل', 'أحسن', 'الأنسب', 'بين', 'مقابل', 'ولا', 'أيهما'],
         weight: 1.0
+      },
+      activity: {
+        semantic: ['نشاط', 'مشروع', 'شركة', 'مؤسسة', 'منشأة', 'محل', 'مصنع', 'فندق', 'مطعم'],
+        weight: 1.2
       }
     };
 
-    // أنماط الأسئلة (Query Types)
     this.queryTypes = {
-      SIMPLE: 'simple',              // سؤال بسيط
-      COMPLEX: 'complex',            // سؤال مركب
-      SEQUENTIAL: 'sequential',      // سؤال متتابع
-      COMPARATIVE: 'comparative',    // سؤال مقارنة
-      STATISTICAL: 'statistical',    // سؤال إحصائي
-      CROSS_REFERENCE: 'cross_ref'   // سؤال يحتاج ربط بين قواعد
+      SIMPLE: 'simple',
+      COMPLEX: 'complex',
+      SEQUENTIAL: 'sequential',
+      COMPARATIVE: 'comparative',
+      STATISTICAL: 'statistical',
+      CROSS_REFERENCE: 'cross_ref'
     };
 
-    // الكيانات المعروفة (للاستخلاص)
     this.knownEntities = {
       governorates: [],
       locations: [],
       activities: [],
       authorities: []
     };
+
+    // 🔥 قائمة موسعة للأنشطة الشائعة
+    this.commonActivities = [
+      'فندق', 'مصنع', 'مطعم', 'مقهى', 'كافيه', 'محل', 'شركة', 'مكتب',
+      'مخبز', 'صيدلية', 'عيادة', 'مستشفى', 'مدرسة', 'حضانة', 'روضة',
+      'ورشة', 'معمل', 'قرية سياحية', 'منتجع', 'ريزورت', 'كومباوند',
+      'سوبر ماركت', 'هايبر ماركت', 'مول', 'محطة وقود', 'غسيل سيارات',
+      'صالون', 'حلاق', 'جيم', 'نادي', 'ملعب', 'مركز تدريب', 'أكاديمية',
+      'يخت', 'مركب', 'باخرة', 'غوص', 'نقل سياحي', 'كهرباء', 'طاقة',
+      'مصنع', 'ورشة', 'معمل', 'وحدة إنتاج', 'خط إنتاج', 'تصنيع',
+      'مخزن', 'مستودع', 'سوق', 'معرض', 'صالة عرض'
+    ];
   }
 
-  /**
-   * 🎯 التصنيف الرئيسي للنية
-   * @param {string} query - سؤال المستخدم
-   * @returns {object} النية المكتشفة مع درجة الثقة
-   */
   async classifyIntent(query) {
     const normalized = this.normalizer.normalize(query);
     
@@ -89,63 +84,80 @@ class IntentClassifier {
       suggestedDatabases: []
     };
 
-    // 1. التعرف على النية بناءً على الأنماط الدلالية
+    // 1. استخلاص الكيانات أولاً (مهم جداً!)
+    classification.entities = this._extractQueryEntities(normalized);
+
+    // 2. حساب نقاط النوايا
     const intentScores = this._calculateIntentScores(normalized);
-    
-    // ترتيب النوايا حسب الدرجة
+
+    // 🔥 3. تعزيز النوايا بناءً على الكيانات المستخلصة
+    if (classification.entities.activities.length > 0) {
+      intentScores.activity = Math.max(intentScores.activity || 0, 0.75);
+      // إذا كان السؤال عن نشاط محدد، النية القانونية قوية أيضاً
+      if (/ترخيص|رخصة|تصريح|مستندات|أوراق|إجراءات/.test(normalized)) {
+        intentScores.legal = Math.max(intentScores.legal || 0, 0.7);
+      }
+    }
+
+    if (classification.entities.locations.length > 0 || 
+        classification.entities.governorates.length > 0) {
+      intentScores.geographic = Math.max(intentScores.geographic || 0, 0.7);
+    }
+
+    if (classification.entities.sectors.length > 0 || /قرار|104|حوافز/.test(normalized)) {
+      intentScores.incentive = Math.max(intentScores.incentive || 0, 0.7);
+    }
+
+    // 4. ترتيب النوايا
     const sortedIntents = Object.entries(intentScores)
-      .sort((a, b) => b[1] - a[1]);
+      .sort((a, b) => b[1] - a[1])
+      .filter(([_, score]) => score > 0);
 
     if (sortedIntents.length > 0) {
       classification.primaryIntent = sortedIntents[0][0];
       classification.confidence = sortedIntents[0][1];
       
-      // النوايا الثانوية (درجة > 0.3)
       classification.secondaryIntents = sortedIntents
         .slice(1)
         .filter(([_, score]) => score > 0.3)
         .map(([intent, _]) => intent);
     }
 
-    // 2. تحديد نوع السؤال
-    classification.queryType = this._detectQueryType(normalized);
+    // 5. تحديد نوع السؤال
+    classification.queryType = this._detectQueryType(normalized, classification.entities);
 
-    // 3. استخلاص الكيانات
-    classification.entities = this._extractQueryEntities(normalized);
-
-    // 4. تحديد ما إذا كان يحتاج ربط بين قواعد
+    // 6. تحديد الربط المتقاطع
     classification.requiresCrossReference = this._needsCrossReference(
       classification.primaryIntent,
       classification.entities,
       classification.queryType
     );
 
-    // 5. اقتراح القواعد المناسبة
-    classification.suggestedDatabases = this._suggestDatabases(classification);
+    // 7. اقتراح القواعد المناسبة
+    classification.suggestedDatabases = this._suggestDatabasesEnhanced(classification);
 
     return classification;
   }
 
-  /**
-   * 🧮 حساب درجة كل نية
-   */
   _calculateIntentScores(normalizedQuery) {
     const scores = {};
-    const words = normalizedQuery.split(/\s+/);
+    const words = normalizedQuery.split(/\s+/).filter(w => w.length > 1);
 
     for (const [intentName, intentData] of Object.entries(this.intentPatterns)) {
       let score = 0;
       let matches = 0;
 
-      // البحث عن الكلمات الدلالية
       for (const semanticWord of intentData.semantic) {
-        if (words.some(word => word.includes(semanticWord) || semanticWord.includes(word))) {
-          matches++;
-          score += intentData.weight;
+        const matchCount = words.filter(word => 
+          word.includes(semanticWord) || semanticWord.includes(word)
+        ).length;
+        
+        if (matchCount > 0) {
+          matches += matchCount;
+          score += intentData.weight * matchCount;
         }
       }
 
-      // تطبيع الدرجة
       if (matches > 0) {
         scores[intentName] = Math.min(1.0, score / Math.sqrt(words.length));
       } else {
@@ -156,40 +168,31 @@ class IntentClassifier {
     return scores;
   }
 
-  /**
-   * 🔍 تحديد نوع السؤال
-   */
-  _detectQueryType(normalizedQuery) {
+  _detectQueryType(normalizedQuery, entities) {
     // إحصائي
-    if (/\b(كم|عدد|كام|كل|جميع|قائمة)\b/.test(normalizedQuery)) {
+    if (/\b(كم|عدد|كام|كل|جميع|قائمة|توزيع|احصائية)\b/.test(normalizedQuery)) {
       return this.queryTypes.STATISTICAL;
     }
 
     // مقارنة
-    if (/\b(فرق|مقارنة|أفضل|بين|ولا|أم)\b/.test(normalizedQuery)) {
+    if (/\b(فرق|مقارنة|أفضل|بين|ولا|أم|أيهما|مقابل)\b/.test(normalizedQuery)) {
       return this.queryTypes.COMPARATIVE;
     }
 
-    // مركب (يحتوي على أكثر من كيان)
-    const entities = this._extractQueryEntities(normalizedQuery);
-    const entityCount = Object.values(entities).filter(e => e.length > 0).length;
-    
+    // مركب (عدة كيانات)
+    const entityCount = Object.values(entities).filter(e => e && e.length > 0).length;
     if (entityCount >= 2) {
       return this.queryTypes.COMPLEX;
     }
 
-    // متتابع (يحتوي على ضمائر)
-    if (/\b(ها|هم|هي|هو|هذا|هذه|ذلك|تلك)\b/.test(normalizedQuery)) {
+    // متتابع (ضمائر)
+    if (/\b(ها|هم|هي|هو|هذا|هذه|ذلك|تلك|فيها|منها)\b/.test(normalizedQuery)) {
       return this.queryTypes.SEQUENTIAL;
     }
 
-    // بسيط
     return this.queryTypes.SIMPLE;
   }
 
-  /**
-   * 🏷️ استخلاص الكيانات من السؤال
-   */
   _extractQueryEntities(normalizedQuery) {
     const entities = {
       numbers: [],
@@ -200,55 +203,81 @@ class IntentClassifier {
       sectors: []
     };
 
-    // استخدام محلل اللغة العربية
     const basicEntities = this.normalizer.extractEntities(normalizedQuery);
-    
-    entities.numbers = basicEntities.numbers;
-    entities.governorates = basicEntities.governorates;
+    entities.numbers = basicEntities.numbers || [];
+    entities.governorates = basicEntities.governorates || [];
 
-    // استخلاص أسماء المناطق المحتملة
+    // 🔥 استخلاص الأنشطة بدقة عالية
+    const queryLower = normalizedQuery.toLowerCase();
+    
+    // طريقة 1: المطابقة المباشرة
+    this.commonActivities.forEach(activity => {
+      if (queryLower.includes(activity)) {
+        entities.activities.push(activity);
+      }
+    });
+
+    // طريقة 2: أنماط السياق
+    const activityPatterns = [
+      /(?:نشاط|مشروع|تأسيس|إنشاء|فتح|بدء|تشغيل)\s+([^\s,،.؟]+(?:\s+[^\s,،.؟]+){0,2})/g,
+      /([^\s,،.؟]+)\s+(?:في|بـ|من)\s+(?:مصر|القاهرة|الإسكندرية)/g,
+    ];
+
+    activityPatterns.forEach(pattern => {
+      let match;
+      while ((match = pattern.exec(queryLower)) !== null) {
+        const extracted = match[1].trim();
+        if (extracted.length > 2 && extracted.length < 30) {
+          entities.activities.push(extracted);
+        }
+      }
+    });
+
+    // طريقة 3: كلمات مفتاحية للصناعات
+    const industryKeywords = {
+      'فندق': ['فندق', 'فنادق', 'hotel', 'أوتيل'],
+      'مصنع': ['مصنع', 'مصانع', 'تصنيع', 'إنتاج'],
+      'مطعم': ['مطعم', 'مطاعم', 'restaurant'],
+      'كهرباء': ['كهرباء', 'كهربائي', 'طاقة', 'توليد']
+    };
+
+    Object.entries(industryKeywords).forEach(([mainWord, variations]) => {
+      if (variations.some(v => queryLower.includes(v))) {
+        if (!entities.activities.includes(mainWord)) {
+          entities.activities.push(mainWord);
+        }
+      }
+    });
+
+    // استخلاص المواقع
     const locationPatterns = [
-      /منطقة\s+([^\s,،.]+(?:\s+[^\s,،.]+){0,3})/g,
-      /مدينة\s+([^\s,،.]+(?:\s+[^\s,،.]+){0,2})/g,
-      /(\d+)\s*(رمضان|أكتوبر|مايو)/g,
-      /(العبور|بدر|الشروق|السادات|العاشر|الروبيكي|شق الثعبان)/g
+      /منطقة\s+([^\s,،.؟]+(?:\s+[^\s,،.؟]+){0,3})/g,
+      /مدينة\s+([^\s,،.؟]+(?:\s+[^\s,،.؟]+){0,2})/g,
+      /(\d+)\s*(رمضان|أكتوبر|مايو|السادات)/g,
+      /(العبور|بدر|الشروق|السادات|العاشر|الروبيكي|شق الثعبان|حلوان)/g
     ];
 
     locationPatterns.forEach(pattern => {
       const matches = normalizedQuery.match(pattern);
       if (matches) {
-        entities.locations.push(...matches);
-      }
-    });
-
-    // استخلاص الأنشطة المحتملة
-    const activityPatterns = [
-      /مصنع\s+([^\s,،.]+(?:\s+[^\s,،.]+){0,3})/g,
-      /نشاط\s+([^\s,،.]+(?:\s+[^\s,،.]+){0,2})/g,
-      /(صناعي|تجاري|سياحي|زراعي|خدمي)/g
-    ];
-
-    activityPatterns.forEach(pattern => {
-      const matches = normalizedQuery.match(pattern);
-      if (matches) {
-        entities.activities.push(...matches);
+        entities.locations.push(...matches.map(m => m.trim()));
       }
     });
 
     // استخلاص الجهات
     const authorityPatterns = [
-      /(وزارة|هيئة|مصلحة|جهاز)\s+([^\s,،.]+(?:\s+[^\s,،.]+){0,3})/g,
-      /(المحافظة|المجتمعات العمرانية|التنمية الصناعية)/g
+      /(وزارة|هيئة|مصلحة|جهاز|إدارة)\s+([^\s,،.؟]+(?:\s+[^\s,،.؟]+){0,3})/g,
+      /(المحافظة|المجتمعات العمرانية|التنمية الصناعية|السياحة|الصحة|التعليم)/g
     ];
 
     authorityPatterns.forEach(pattern => {
       const matches = normalizedQuery.match(pattern);
       if (matches) {
-        entities.authorities.push(...matches);
+        entities.authorities.push(...matches.map(m => m.trim()));
       }
     });
 
-    // استخلاص القطاعات (القرار 104)
+    // استخلاص القطاعات
     if (/قطاع\s*(أ|ا|a)/i.test(normalizedQuery)) {
       entities.sectors.push('sectorA');
     }
@@ -258,32 +287,28 @@ class IntentClassifier {
 
     // إزالة التكرار
     for (const key in entities) {
-      entities[key] = [...new Set(entities[key])];
+      if (Array.isArray(entities[key])) {
+        entities[key] = [...new Set(entities[key])];
+      }
     }
 
     return entities;
   }
 
-  /**
-   * 🔗 تحديد ما إذا كان السؤال يحتاج ربط بين قواعد
-   */
   _needsCrossReference(primaryIntent, entities, queryType) {
-    // إذا كان مركب أو متقاطع
-    if (queryType === this.queryTypes.COMPLEX || queryType === this.queryTypes.CROSS_REFERENCE) {
+    if (queryType === this.queryTypes.COMPLEX || 
+        queryType === this.queryTypes.CROSS_REFERENCE) {
       return true;
     }
 
-    // إذا احتوى على نشاط + موقع
     if (entities.activities.length > 0 && entities.locations.length > 0) {
       return true;
     }
 
-    // إذا احتوى على نشاط + حوافز
     if (entities.activities.length > 0 && primaryIntent === 'incentive') {
       return true;
     }
 
-    // إذا احتوى على موقع + جهة
     if (entities.locations.length > 0 && entities.authorities.length > 0) {
       return true;
     }
@@ -291,52 +316,52 @@ class IntentClassifier {
     return false;
   }
 
-  /**
-   * 💡 اقتراح القواعد المناسبة للبحث
-   */
-  _suggestDatabases(classification) {
-    const databases = [];
+  _suggestDatabasesEnhanced(classification) {
+    const databases = new Set();
+
+    // أولوية للكيانات
+    if (classification.entities.activities.length > 0) {
+      databases.add('activity');
+      databases.add('decision104'); // الأنشطة قد يكون لها حوافز
+    }
+
+    if (classification.entities.locations.length > 0 || 
+        classification.entities.governorates.length > 0) {
+      databases.add('industrial');
+    }
+
+    if (classification.entities.sectors.length > 0 || 
+        /حوافز|قرار|104/.test(classification.entities.activities.join(' '))) {
+      databases.add('decision104');
+    }
 
     // بناءً على النية الرئيسية
     if (classification.primaryIntent === 'legal' || 
-        classification.entities.activities.length > 0) {
-      databases.push('activity');
+        classification.primaryIntent === 'activity') {
+      databases.add('activity');
     }
 
-    if (classification.primaryIntent === 'geographic' || 
-        classification.entities.locations.length > 0 ||
-        classification.entities.governorates.length > 0) {
-      databases.push('industrial');
+    if (classification.primaryIntent === 'geographic') {
+      databases.add('industrial');
     }
 
-    if (classification.primaryIntent === 'incentive' || 
-        classification.entities.sectors.length > 0) {
-      databases.push('decision104');
+    if (classification.primaryIntent === 'incentive') {
+      databases.add('decision104');
     }
 
-    // إذا كان إحصائي، ابحث في كل القواعد
+    // إحصائي = كل القواعد
     if (classification.queryType === this.queryTypes.STATISTICAL) {
       return ['activity', 'decision104', 'industrial'];
     }
 
-    // إذا كان مقارنة، ابحث في القواعد ذات الصلة
-    if (classification.queryType === this.queryTypes.COMPARATIVE) {
-      if (databases.length === 0) {
-        return ['activity', 'decision104', 'industrial'];
-      }
+    // افتراضي
+    if (databases.size === 0) {
+      databases.add('activity');
     }
 
-    // على الأقل قاعدة واحدة
-    if (databases.length === 0) {
-      databases.push('activity');
-    }
-
-    return [...new Set(databases)];
+    return Array.from(databases);
   }
 
-  /**
-   * 📝 بناء استعلامات فرعية للأسئلة المركبة
-   */
   buildSubQueries(query, classification) {
     const subQueries = {
       activity: null,
@@ -347,27 +372,23 @@ class IntentClassifier {
 
     const normalized = this.normalizer.normalize(query);
 
-    // استعلام النشاط
     if (classification.entities.activities.length > 0) {
       subQueries.activity = classification.entities.activities.join(' ');
     } else if (classification.suggestedDatabases.includes('activity')) {
       subQueries.activity = normalized;
     }
 
-    // استعلام الموقع
     if (classification.entities.locations.length > 0) {
       subQueries.location = classification.entities.locations.join(' ');
     } else if (classification.entities.governorates.length > 0) {
       subQueries.location = classification.entities.governorates.join(' ');
     }
 
-    // استعلام القرار 104
     if (classification.primaryIntent === 'incentive' || 
         classification.entities.sectors.length > 0) {
       subQueries.decision104 = normalized;
     }
 
-    // استعلام الجهة
     if (classification.entities.authorities.length > 0) {
       subQueries.authority = classification.entities.authorities.join(' ');
     }
@@ -375,17 +396,14 @@ class IntentClassifier {
     return subQueries;
   }
 
-  /**
-   * 🎭 تحميل الكيانات المعروفة من الفهرس
-   */
   loadKnownEntities(metaIndex) {
     if (!metaIndex) return;
 
     this.knownEntities = {
-      governorates: metaIndex.governorates || [],
-      locations: metaIndex.locations || [],
-      activities: metaIndex.activities || [],
-      authorities: metaIndex.authorities || []
+      governorates: Array.isArray(metaIndex.governorates) ? metaIndex.governorates : [],
+      locations: Array.isArray(metaIndex.locations) ? metaIndex.locations : [],
+      activities: Array.isArray(metaIndex.activities) ? metaIndex.activities : [],
+      authorities: Array.isArray(metaIndex.authorities) ? metaIndex.authorities : []
     };
 
     console.log('✅ تم تحميل الكيانات المعروفة:', {
@@ -396,9 +414,6 @@ class IntentClassifier {
     });
   }
 
-  /**
-   * 🔄 حل الضمائر (Pronoun Resolution) للأسئلة المتتابعة
-   */
   resolvePronouns(query, contextMemory) {
     if (!contextMemory || !contextMemory.lastEntity) {
       return query;
@@ -406,7 +421,6 @@ class IntentClassifier {
 
     let resolved = query;
 
-    // خريطة الضمائر
     const pronouns = {
       'ها': contextMemory.lastEntity,
       'هو': contextMemory.lastEntity,
@@ -415,10 +429,11 @@ class IntentClassifier {
       'هذا': contextMemory.lastEntity,
       'هذه': contextMemory.lastEntity,
       'ذلك': contextMemory.lastEntity,
-      'تلك': contextMemory.lastEntity
+      'تلك': contextMemory.lastEntity,
+      'فيها': `في ${contextMemory.lastEntity}`,
+      'منها': `من ${contextMemory.lastEntity}`
     };
 
-    // استبدال الضمائر
     for (const [pronoun, entity] of Object.entries(pronouns)) {
       const regex = new RegExp(`\\b${pronoun}\\b`, 'g');
       resolved = resolved.replace(regex, entity);
@@ -428,7 +443,6 @@ class IntentClassifier {
   }
 }
 
-// تصدير الكلاس
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = IntentClassifier;
 }
