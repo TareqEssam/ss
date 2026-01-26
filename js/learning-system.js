@@ -4,8 +4,7 @@
  * 
  * الهدف: تعلم من تصحيحات المستخدم وتحسين الإجابات تدريجياً
  * 
- * @author AI Expert System
- * @version 2.0.0
+ * @version 3.0.0 (متوافق مع IndexedDB الجديد)
  */
 
 class LearningSystem {
@@ -13,10 +12,8 @@ class LearningSystem {
     this.dbManager = dbManager;
     this.normalizer = normalizer;
     
-    // ذاكرة التعلم المحلية (للوصول السريع)
     this.learnedKnowledge = new Map();
     
-    // الإحصائيات
     this.stats = {
       totalLearned: 0,
       totalCorrections: 0,
@@ -34,11 +31,16 @@ class LearningSystem {
 
     console.log('🧠 تهيئة نظام التعلم...');
 
-    // تحميل المعرفة المتعلمة من قاعدة البيانات
-    await this._loadLearnedKnowledge();
-
-    this.initialized = true;
-    console.log(`✅ تم تحميل ${this.learnedKnowledge.size} معلومة متعلمة`);
+    try {
+      await this._loadLearnedKnowledge();
+      this.initialized = true;
+      console.log(`✅ تم تحميل ${this.learnedKnowledge.size} معلومة متعلمة`);
+    } catch (error) {
+      console.error('❌ خطأ في تهيئة نظام التعلم:', error);
+      // نستمر حتى لو فشل التحميل
+      this.initialized = true;
+      console.log('⚠️ تم التهيئة بدون بيانات متعلمة');
+    }
   }
 
   /**
@@ -46,6 +48,18 @@ class LearningSystem {
    */
   async _loadLearnedKnowledge() {
     try {
+      // التحقق من وجود قاعدة البيانات والمخزن
+      if (!this.dbManager.db) {
+        console.warn('⚠️ قاعدة البيانات غير مهيأة');
+        return;
+      }
+
+      // التحقق من وجود المخزن
+      if (!this.dbManager.db.objectStoreNames.contains('LearnedKnowledge')) {
+        console.log('ℹ️ مخزن المعرفة المتعلمة غير موجود بعد (سيتم إنشاؤه عند أول استخدام)');
+        return;
+      }
+
       const transaction = this.dbManager.db.transaction(['LearnedKnowledge'], 'readonly');
       const store = transaction.objectStore('LearnedKnowledge');
       const allRecords = await this._promisifyRequest(store.getAll());
@@ -70,51 +84,50 @@ class LearningSystem {
 
     } catch (error) {
       console.error('❌ خطأ في تحميل المعرفة المتعلمة:', error);
+      throw error;
     }
   }
 
   /**
    * 🎓 تعلم معلومة جديدة
-   * @param {string} query - السؤال الأصلي
-   * @param {string} answer - الإجابة الصحيحة
-   * @param {object} metadata - بيانات إضافية
    */
   async learn(query, answer, metadata = {}) {
     console.log('🎓 حفظ معلومة جديدة...');
 
-    const normalizedQuery = this.normalizer.normalize(query);
+    try {
+      const normalizedQuery = this.normalizer.normalize(query);
 
-    // التحقق من وجود معلومة مشابهة
-    const existingEntry = this._findSimilarEntry(normalizedQuery);
+      // التحقق من وجود معلومة مشابهة
+      const existingEntry = this._findSimilarEntry(normalizedQuery);
 
-    if (existingEntry) {
-      // تحديث الإجابة الموجودة
-      await this._updateExistingEntry(existingEntry.id, answer, metadata);
-      console.log('🔄 تم تحديث معلومة موجودة');
-    } else {
-      // إضافة معلومة جديدة
-      const id = await this.dbManager.saveLearnedKnowledge(query, answer, metadata);
-      
-      this.learnedKnowledge.set(normalizedQuery, {
-        id: id,
-        query: query,
-        answer: answer,
-        metadata: metadata,
-        learnedAt: new Date().toISOString(),
-        usageCount: 0
-      });
+      if (existingEntry) {
+        await this._updateExistingEntry(existingEntry.id, answer, metadata);
+        console.log('🔄 تم تحديث معلومة موجودة');
+      } else {
+        const id = await this.dbManager.saveLearnedKnowledge(query, answer, metadata);
+        
+        this.learnedKnowledge.set(normalizedQuery, {
+          id: id,
+          query: query,
+          answer: answer,
+          metadata: metadata,
+          learnedAt: new Date().toISOString(),
+          usageCount: 0
+        });
 
-      this.stats.totalLearned++;
-      console.log(`✅ تم حفظ معلومة جديدة (ID: ${id})`);
+        this.stats.totalLearned++;
+        console.log(`✅ تم حفظ معلومة جديدة (ID: ${id})`);
+      }
+
+      this._updateMostUsedAnswers();
+    } catch (error) {
+      console.error('❌ خطأ في حفظ المعلومة:', error);
+      throw error;
     }
-
-    this._updateMostUsedAnswers();
   }
 
   /**
    * 🔍 البحث في المعرفة المتعلمة
-   * @param {string} query - استعلام المستخدم
-   * @returns {object|null} الإجابة المتعلمة أو null
    */
   async searchLearned(query) {
     const normalizedQuery = this.normalizer.normalize(query);
@@ -146,7 +159,7 @@ class LearningSystem {
     let bestSimilarity = 0;
 
     for (const [storedQuery, entry] of this.learnedKnowledge.entries()) {
-      const similarity = this.normalizer.textSimilarity(normalizedQuery, storedQuery);
+      const similarity = this._calculateSimilarity(normalizedQuery, storedQuery);
       
       if (similarity > 0.85 && similarity > bestSimilarity) {
         bestSimilarity = similarity;
@@ -155,6 +168,20 @@ class LearningSystem {
     }
 
     return bestMatch;
+  }
+
+  /**
+   * 📏 حساب التشابه بين نصين
+   */
+  _calculateSimilarity(text1, text2) {
+    // تشابه بسيط بناءً على الكلمات المشتركة
+    const words1 = new Set(text1.split(/\s+/).filter(w => w.length > 2));
+    const words2 = new Set(text2.split(/\s+/).filter(w => w.length > 2));
+    
+    const intersection = new Set([...words1].filter(w => words2.has(w)));
+    const union = new Set([...words1, ...words2]);
+    
+    return union.size > 0 ? intersection.size / union.size : 0;
   }
 
   /**
@@ -187,6 +214,7 @@ class LearningSystem {
       }
     } catch (error) {
       console.error('❌ خطأ في تحديث المعلومة:', error);
+      throw error;
     }
   }
 
@@ -260,6 +288,7 @@ class LearningSystem {
       
     } catch (error) {
       console.error('❌ خطأ في حذف المعلومة:', error);
+      throw error;
     }
   }
 
@@ -303,6 +332,7 @@ class LearningSystem {
       
     } catch (error) {
       console.error('❌ خطأ في المسح:', error);
+      throw error;
     }
   }
 
@@ -357,7 +387,6 @@ class LearningSystem {
   }
 }
 
-// تصدير الكلاس
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = LearningSystem;
 }
