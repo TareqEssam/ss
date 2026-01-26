@@ -1,0 +1,835 @@
+/**
+ * 🎨 تنسيقات المساعد الذكي
+ * AI Assistant Styles
+ * 
+ * @author AI Expert System
+ * @version 2.0.0
+ */
+
+/* =====================================================
+   المتغيرات العامة
+===================================================== */
+:root {
+  --ai-primary: #2563eb;
+  --ai-primary-dark: #1d4ed8;
+  --ai-secondary: #10b981;
+  --ai-danger: #ef4444;
+  --ai-warning: #f59e0b;
+  --ai-info: #3b82f6;
+  --ai-success: #22c55e;
+  
+  --ai-bg-light: #ffffff;
+  --ai-bg-dark: #1f2937;
+  --ai-bg-darker: #111827;
+  
+  --ai-text-light: #f9fafb;
+  --ai-text-dark: #1f2937;
+  --ai-text-muted: #6b7280;
+  
+  --ai-border: #e5e7eb;
+  --ai-shadow: rgba(0, 0, 0, 0.1);
+  --ai-shadow-lg: rgba(0, 0, 0, 0.15);
+  
+  --ai-radius: 12px;
+  --ai-radius-sm: 8px;
+  --ai-radius-lg: 16px;
+  
+  --ai-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --ai-transition-fast: all 0.15s ease;
+  
+  --ai-z-icon: 9998;
+  --ai-z-panel: 9999;
+  --ai-z-notification: 10000;
+}
+
+/* =====================================================
+   الأيقونة العائمة
+===================================================== */
+.ai-floating-icon {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, var(--ai-primary) 0%, var(--ai-primary-dark) 100%);
+  border-radius: 50%;
+  box-shadow: 0 4px 20px var(--ai-shadow-lg);
+  cursor: pointer;
+  z-index: var(--ai-z-icon);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--ai-transition);
+  animation: floatIn 0.5s ease-out;
+}
+
+.ai-floating-icon:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 30px var(--ai-shadow-lg);
+}
+
+.ai-floating-icon.dragging {
+  cursor: move;
+  opacity: 0.8;
+}
+
+.ai-floating-icon .icon-inner {
+  width: 32px;
+  height: 32px;
+  color: white;
+}
+
+.ai-floating-icon .icon-inner svg {
+  width: 100%;
+  height: 100%;
+}
+
+.ai-floating-icon .icon-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--ai-success);
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.ai-floating-icon.panel-open {
+  transform: scale(0.9);
+  opacity: 0.7;
+}
+
+/* =====================================================
+   لوحة المساعد
+===================================================== */
+.ai-assistant-panel {
+  position: fixed;
+  bottom: 100px;
+  right: 30px;
+  width: 420px;
+  max-width: calc(100vw - 40px);
+  height: 600px;
+  max-height: calc(100vh - 140px);
+  background: var(--ai-bg-light);
+  border-radius: var(--ai-radius-lg);
+  box-shadow: 0 10px 40px var(--ai-shadow-lg);
+  z-index: var(--ai-z-panel);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes floatIn {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* =====================================================
+   رأس اللوحة
+===================================================== */
+.assistant-header {
+  background: linear-gradient(135deg, var(--ai-primary) 0%, var(--ai-primary-dark) 100%);
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ai-logo {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ai-logo svg {
+  width: 24px;
+  height: 24px;
+}
+
+.header-title h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.header-title .status-text {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.header-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: var(--ai-radius-sm);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--ai-transition-fast);
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* =====================================================
+   جسم اللوحة
+===================================================== */
+.assistant-body {
+  flex: 1;
+  overflow: hidden;
+  background: #f9fafb;
+}
+
+.messages-container {
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.messages-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* =====================================================
+   الرسائل
+===================================================== */
+.message {
+  display: flex;
+  gap: 12px;
+  animation: messageIn 0.3s ease-out;
+}
+
+@keyframes messageIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.message-content {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: var(--ai-radius);
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.user-message .message-content {
+  background: var(--ai-primary);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.assistant-message .message-content {
+  background: white;
+  color: var(--ai-text-dark);
+  border: 1px solid var(--ai-border);
+  border-bottom-left-radius: 4px;
+}
+
+.message-content p {
+  margin: 0 0 8px 0;
+}
+
+.message-content p:last-child {
+  margin-bottom: 0;
+}
+
+.message-content ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.message-content li {
+  margin: 4px 0;
+}
+
+.message-content strong {
+  font-weight: 600;
+  color: var(--ai-primary);
+}
+
+.assistant-message .message-content strong {
+  color: var(--ai-primary);
+}
+
+/* =====================================================
+   رسالة الترحيب
+===================================================== */
+.welcome-message {
+  display: flex;
+  gap: 12px;
+}
+
+.welcome-message .ai-avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+}
+
+.welcome-message .message-content {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  color: var(--ai-text-dark);
+}
+
+/* =====================================================
+   مؤشر الكتابة
+===================================================== */
+.typing-indicator .message-content {
+  padding: 16px;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.typing-dots span {
+  width: 8px;
+  height: 8px;
+  background: var(--ai-text-muted);
+  border-radius: 50%;
+  animation: typingBounce 1.4s infinite;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-10px);
+  }
+}
+
+/* =====================================================
+   روابط الرد
+===================================================== */
+.response-links {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.response-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--ai-primary);
+  color: white;
+  text-decoration: none;
+  border-radius: var(--ai-radius-sm);
+  font-size: 13px;
+  transition: var(--ai-transition-fast);
+}
+
+.response-link:hover {
+  background: var(--ai-primary-dark);
+  transform: translateX(-2px);
+}
+
+/* =====================================================
+   تذييل اللوحة
+===================================================== */
+.assistant-footer {
+  background: white;
+  border-top: 1px solid var(--ai-border);
+  padding: 16px;
+}
+
+.input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-field {
+  width: 100%;
+  min-height: 44px;
+  max-height: 120px;
+  padding: 12px;
+  border: 1px solid var(--ai-border);
+  border-radius: var(--ai-radius);
+  font-size: 14px;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  transition: var(--ai-transition-fast);
+  direction: rtl;
+  text-align: right;
+}
+
+.input-field:focus {
+  border-color: var(--ai-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.input-field::placeholder {
+  color: var(--ai-text-muted);
+}
+
+.input-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.control-btn {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--ai-border);
+  background: white;
+  border-radius: var(--ai-radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--ai-transition-fast);
+  color: var(--ai-text-muted);
+}
+
+.control-btn:hover {
+  background: #f9fafb;
+  border-color: var(--ai-primary);
+  color: var(--ai-primary);
+}
+
+.control-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.send-btn {
+  background: var(--ai-primary);
+  border-color: var(--ai-primary);
+  color: white;
+}
+
+.send-btn:hover {
+  background: var(--ai-primary-dark);
+  border-color: var(--ai-primary-dark);
+}
+
+.voice-btn.active {
+  background: var(--ai-danger);
+  border-color: var(--ai-danger);
+  color: white;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.mute-btn.muted {
+  background: var(--ai-warning);
+  border-color: var(--ai-warning);
+  color: white;
+}
+
+/* =====================================================
+   الإشعارات
+===================================================== */
+.ai-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  background: white;
+  border-radius: var(--ai-radius);
+  box-shadow: 0 4px 20px var(--ai-shadow-lg);
+  z-index: var(--ai-z-notification);
+  font-size: 14px;
+  font-weight: 500;
+  transform: translateX(400px);
+  transition: var(--ai-transition);
+  max-width: 300px;
+}
+
+.ai-notification.show {
+  transform: translateX(0);
+}
+
+.ai-notification.success {
+  background: var(--ai-success);
+  color: white;
+}
+
+.ai-notification.error {
+  background: var(--ai-danger);
+  color: white;
+}
+
+.ai-notification.warning {
+  background: var(--ai-warning);
+  color: white;
+}
+
+.ai-notification.info {
+  background: var(--ai-info);
+  color: white;
+}
+
+/* =====================================================
+   التجاوب (Responsive)
+===================================================== */
+@media (max-width: 768px) {
+  .ai-floating-icon {
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+  }
+
+  .ai-assistant-panel {
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+    animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  .header-title h3 {
+    font-size: 14px;
+  }
+
+  .header-title .status-text {
+    font-size: 11px;
+  }
+
+  .messages-container {
+    padding: 12px;
+  }
+
+  .message-content {
+    font-size: 13px;
+  }
+
+  .input-field {
+    font-size: 16px; /* منع التكبير التلقائي في iOS */
+  }
+}
+
+@media (max-width: 480px) {
+  .ai-floating-icon {
+    width: 52px;
+    height: 52px;
+  }
+
+  .assistant-header {
+    padding: 12px 16px;
+  }
+
+  .ai-logo {
+    width: 36px;
+    height: 36px;
+  }
+
+  .header-controls {
+    gap: 4px;
+  }
+
+  .icon-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .icon-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .assistant-footer {
+    padding: 12px;
+  }
+
+  .control-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .ai-notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+}
+
+/* =====================================================
+   الوضع الداكن (Dark Mode)
+===================================================== */
+@media (prefers-color-scheme: dark) {
+  .ai-assistant-panel {
+    background: var(--ai-bg-dark);
+  }
+
+  .assistant-body {
+    background: var(--ai-bg-darker);
+  }
+
+  .assistant-message .message-content {
+    background: var(--ai-bg-dark);
+    border-color: #374151;
+    color: var(--ai-text-light);
+  }
+
+  .assistant-message .message-content strong {
+    color: #60a5fa;
+  }
+
+  .input-field {
+    background: var(--ai-bg-dark);
+    border-color: #374151;
+    color: var(--ai-text-light);
+  }
+
+  .input-field::placeholder {
+    color: #9ca3af;
+  }
+
+  .control-btn {
+    background: var(--ai-bg-dark);
+    border-color: #374151;
+    color: #9ca3af;
+  }
+
+  .control-btn:hover {
+    background: #374151;
+    color: white;
+  }
+
+  .assistant-footer {
+    background: var(--ai-bg-dark);
+    border-top-color: #374151;
+  }
+
+  .messages-container::-webkit-scrollbar-thumb {
+    background: #4b5563;
+  }
+
+  .welcome-message .message-content {
+    background: #1e3a5f;
+    border-color: #2563eb;
+    color: var(--ai-text-light);
+  }
+}
+
+/* =====================================================
+   إمكانية الوصول (Accessibility)
+===================================================== */
+.ai-floating-icon:focus,
+.icon-btn:focus,
+.control-btn:focus,
+.input-field:focus {
+  outline: 2px solid var(--ai-primary);
+  outline-offset: 2px;
+}
+
+/* تحسين التباين للقراءة */
+@media (prefers-contrast: high) {
+  .ai-assistant-panel {
+    border: 2px solid var(--ai-primary);
+  }
+
+  .message-content {
+    border-width: 2px;
+  }
+
+  .control-btn {
+    border-width: 2px;
+  }
+}
+
+/* تقليل الحركة للمستخدمين الذين يفضلون ذلك */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* =====================================================
+   تنسيقات إضافية للمحتوى
+===================================================== */
+.message-content code {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+
+.message-content a {
+  color: var(--ai-primary);
+  text-decoration: underline;
+}
+
+.message-content a:hover {
+  color: var(--ai-primary-dark);
+}
+
+/* الجداول في الرسائل */
+.message-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+}
+
+.message-content th,
+.message-content td {
+  padding: 8px;
+  border: 1px solid var(--ai-border);
+  text-align: right;
+}
+
+.message-content th {
+  background: #f9fafb;
+  font-weight: 600;
+}
+
+/* القوائم المرقمة والنقطية */
+.message-content ol,
+.message-content ul {
+  margin: 8px 0;
+  padding-right: 24px;
+}
+
+.message-content li {
+  margin: 4px 0;
+  line-height: 1.6;
+}
+
+/* =====================================================
+   تأثيرات تحميل
+===================================================== */
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =====================================================
+   نهاية الملف
+===================================================== */
