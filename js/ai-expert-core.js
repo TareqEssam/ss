@@ -12,7 +12,7 @@ class AIExpertCore {
   constructor() {
     // المكونات الأساسية
     this.normalizer = null;
-    this.vectorEngine = null;
+    this.VectorEngineV7 = null;
     this.intentClassifier = null;
     this.dbManager = null;
     this.learningSystem = null;
@@ -98,12 +98,12 @@ async initialize() {
 
     // 3. تهيئة محرك المتجهات
     console.log('⚡ تهيئة محرك المتجهات...');
-    this.vectorEngine = new VectorEngine(this.normalizer);
-    await this.vectorEngine.loadDatabases(this.vectorDatabases);
+    this.VectorEngineV7 = new VectorEngineV7(this.normalizer);
+    await this.VectorEngineV7.loadDatabases(this.vectorDatabases);
 
     // 4. تهيئة مصنف النوايا
     console.log('🎯 تهيئة مصنف النوايا...');
-    this.intentClassifier = new IntentClassifier(this.normalizer, this.vectorEngine);
+    this.intentClassifier = new IntentClassifier(this.normalizer, this.VectorEngineV7);
     this.intentClassifier.loadKnownEntities(this.metaIndex);
 
     // 5. تهيئة نظام التعلم
@@ -255,7 +255,7 @@ async initialize() {
 async _handleStatisticalQuery(query, classification) {
   console.log('📊 معالجة سؤال إحصائي...');
 
-  const results = await this.vectorEngine.parallelSearch(query, {
+  const results = await this.VectorEngineV7.parallelSearch(query, {
     topK: 200, // نحتاج كل البيانات للإحصائيات
     databases: classification.suggestedDatabases,
     queryType: 'statistical',
@@ -364,7 +364,7 @@ async _handleComparativeQuery(query, classification) {
   // مقارنة بين مواقع
   if (entities.locations && entities.locations.length >= 2) {
     for (const location of entities.locations.slice(0, 3)) {
-      const results = await this.vectorEngine.semanticSearch(
+      const results = await this.VectorEngineV7.semanticSearch(
         location,
         'industrial',
         1,
@@ -385,7 +385,7 @@ async _handleComparativeQuery(query, classification) {
   // مقارنة بين أنشطة
   if (entities.activities && entities.activities.length >= 2) {
     for (const activity of entities.activities.slice(0, 3)) {
-      const results = await this.vectorEngine.semanticSearch(
+      const results = await this.VectorEngineV7.semanticSearch(
         activity,
         'activity',
         1,
@@ -440,7 +440,7 @@ async _handleCrossReferenceQuery(subQueries, classification) {
 
   // البحث عن النشاط
   if (subQueries.activity) {
-    const activityResults = await this.vectorEngine.semanticSearch(
+    const activityResults = await this.VectorEngineV7.semanticSearch(
       subQueries.activity,
       'activity',
       3,
@@ -455,7 +455,7 @@ async _handleCrossReferenceQuery(subQueries, classification) {
 
   // البحث عن الموقع
   if (subQueries.location) {
-    const locationResults = await this.vectorEngine.semanticSearch(
+    const locationResults = await this.VectorEngineV7.semanticSearch(
       subQueries.location,
       'industrial',
       3,
@@ -474,7 +474,7 @@ async _handleCrossReferenceQuery(subQueries, classification) {
       ? crossResults.activity.original_data.text_preview || subQueries.decision104
       : subQueries.decision104;
       
-    const decision104Results = await this.vectorEngine.semanticSearch(
+    const decision104Results = await this.VectorEngineV7.semanticSearch(
       searchQuery,
       'decision104',
       5,
@@ -521,7 +521,7 @@ async _handleCrossReferenceQuery(subQueries, classification) {
 async _handleSimpleQuery(query, classification) {
   console.log('✅ معالجة سؤال بسيط...');
 
-  const results = await this.vectorEngine.parallelSearch(query, {
+  const results = await this.VectorEngineV7.parallelSearch(query, {
     topK: 5,
     databases: classification.suggestedDatabases,
     queryType: 'simple'
@@ -1314,4 +1314,5 @@ async _saveAllData() {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = AIExpertCore;
 }
+
 
