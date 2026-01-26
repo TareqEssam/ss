@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -10,7 +9,81 @@
   <link rel="stylesheet" href="css/ai-assistant.css">
   
   <style>
-    /* ... نفس الـ CSS السابق ... */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+    
+    .main-content {
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      text-align: center;
+      padding: 40px 20px;
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: white;
+      border-radius: 16px;
+      margin-bottom: 30px;
+    }
+    
+    .header h1 {
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+    
+    .header p {
+      opacity: 0.9;
+      font-size: 1.1em;
+    }
+    
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      flex-direction: column;
+    }
+    
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    .loading-text {
+      color: white;
+      margin-top: 20px;
+      font-size: 18px;
+    }
+    
+    .loading-progress {
+      color: #60a5fa;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -19,6 +92,7 @@
   <div id="loading-screen">
     <div class="loading-spinner"></div>
     <div class="loading-text">جاري تحميل المساعد الذكي...</div>
+    <div class="loading-progress" id="loading-progress">تهيئة النظام...</div>
   </div>
 
   <!-- المحتوى الرئيسي -->
@@ -29,65 +103,58 @@
     </div>
   </div>
 
-  <!-- تحميل التطبيق كـ ES Module -->
+  <!-- ========================================
+       المكتبات الخارجية
+  ======================================== -->
+  <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2" type="module"></script>
+
+  <!-- ========================================
+       قواعد البيانات النصية (المشوشة)
+  ======================================== -->
+  <script src="js/activity_database-s.js"></script>
+  <script src="js/decision104_database-s.js"></script>
+  <script src="js/industrial_database-s.js"></script>
+
+  <!-- ========================================
+       المكونات الأساسية
+  ======================================== -->
+  <script src="js/arabic-normalizer.js"></script>
+  <script src="js/transformers-loader.js"></script>
+  <script src="js/vector-engine-v7.js"></script>
+  <script src="js/intent-classifier.js"></script>
+  <script src="js/indexeddb-manager.js"></script>
+  <script src="js/query-parser.js"></script>
+  <script src="js/learning-system.js"></script>
+  <script src="js/response-generator.js"></script>
+
+  <!-- ========================================
+       النواة الرئيسية
+  ======================================== -->
+  <script src="js/ai-expert-core.js"></script>
+
+  <!-- ========================================
+       مكونات الواجهة
+  ======================================== -->
+  <script src="js/voice-handler.js"></script>
+  <script src="js/typewriter-effect.js"></script>
+  <script src="js/ui-controller.js"></script>
+
+  <!-- ========================================
+       التهيئة والتشغيل
+  ======================================== -->
   <script type="module">
-    // ============ جزء 1: تحميل مكتبة Transformers.js كـ ES Module ============
-    console.log('📦 تحميل مكتبة Transformers.js كـ ES Module...');
-    
-    // استيراد المكتبة بشكل صحيح كـ ES Module
-    import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
-    
-    // تهيئة البيئة
-    env.allowLocalModels = false;
-    
-    // حفظ في window للوصول من السكريبتات القديمة
-    window.transformers = { pipeline, env };
-    window.transformersLoaded = true;
-    
-    console.log('✅ تم تحميل Transformers.js كـ ES Module');
-    console.log('   - pipeline:', typeof pipeline);
-    console.log('   - env:', env);
+    const updateProgress = (msg) => {
+      const el = document.getElementById('loading-progress');
+      if (el) el.textContent = msg;
+    };
 
-    // ============ جزء 2: تحويل المكونات الحالية إلى ES Modules ============
-    // لن نحتاج إلى هذا لأننا سنعدل transformers-loader.js
+    (async function() {
+      console.log('🚀 بدء تحميل نظام المساعد الذكي...');
 
-    // ============ جزء 3: تحميل المكونات الأساسية كـ Modules ============
-    const modulesToLoad = [
-      './js/arabic-normalizer.js',
-      './js/transformers-loader.js',
-      './js/vector-engine-v7.js',
-      './js/intent-classifier.js',
-      './js/indexeddb-manager.js',
-      './js/query-parser.js',
-      './js/learning-system.js',
-      './js/response-generator.js',
-      './js/ai-expert-core.js',
-      './js/voice-handler.js',
-      './js/typewriter-effect.js',
-      './js/ui-controller.js'
-    ];
-
-    async function loadModule(src) {
       try {
-        const module = await import(src);
-        // إذا كان للموديل exports default، نحفظه
-        if (module.default) {
-          const className = module.default.name || src.split('/').pop().replace('.js', '');
-          window[className] = module.default;
-        }
-        return module;
-      } catch (error) {
-        console.error(`❌ فشل تحميل ${src}:`, error);
-        throw error;
-      }
-    }
-
-    async function initializeApplication() {
-      try {
-        console.log('🚀 بدء تحميل نظام المساعد الذكي...');
-
-        // === المرحلة 1: تحميل قواعد البيانات ===
-        console.log('📦 تحميل قواعد البيانات...');
+        // === المرحلة 1: تحميل قواعد البيانات المتجهية ===
+        updateProgress('📦 تحميل قواعد البيانات المتجهية...');
+        console.log('📦 تحميل قواعد البيانات المتجهية...');
         
         const [activityVectors, decision104Vectors, industrialVectors] = await Promise.all([
           import('./data/activity_vectors.js'),
@@ -99,31 +166,48 @@
         window.decision104Vectors = decision104Vectors.default;
         window.industrialVectors = industrialVectors.default;
 
-        console.log('✅ تم تحميل قواعد البيانات');
+        console.log('✅ تم تحميل قواعد المتجهات:', {
+          activity: activityVectors.default?.data?.length || 0,
+          decision104: decision104Vectors.default?.data?.length || 0,
+          industrial: industrialVectors.default?.data?.length || 0
+        });
 
-        // === المرحلة 2: تحميل المكونات ===
-        console.log('🔧 تحميل المكونات الأساسية...');
+        // === المرحلة 2: التحقق من قواعد البيانات النصية ===
+        updateProgress('🔍 التحقق من قواعد البيانات النصية...');
+        console.log('🔍 التحقق من قواعد البيانات النصية...');
         
-        // تحميل جميع المكونات
-        for (const moduleSrc of modulesToLoad) {
-          await loadModule(moduleSrc);
+        if (typeof masterActivityDB === 'undefined') {
+          throw new Error('❌ ملف activity_database-s.js غير محمل!');
+        }
+        if (typeof decision104DB === 'undefined') {
+          throw new Error('❌ ملف decision104_database-s.js غير محمل!');
+        }
+        if (typeof industrialDB === 'undefined') {
+          throw new Error('❌ ملف industrial_database-s.js غير محمل!');
         }
 
-        // === المرحلة 3: إنشاء الكائنات ===
-        console.log('🔨 إنشاء كائنات المكونات...');
+        console.log('✅ قواعد البيانات النصية محملة:', {
+          masterActivityDB: Array.isArray(masterActivityDB) ? masterActivityDB.length : 'خطأ',
+          decision104DB: typeof decision104DB === 'object' ? 'موجود' : 'خطأ',
+          industrialDB: Array.isArray(industrialDB) ? industrialDB.length : 'خطأ'
+        });
+
+        // حفظ في window للوصول السريع
+        window.textDatabases = {
+          activities: masterActivityDB,
+          decision104: decision104DB,
+          industrial: industrialDB
+        };
+
+        // === المرحلة 3: تهيئة المكونات الأساسية ===
+        updateProgress('🔧 تهيئة المكونات الأساسية...');
+        console.log('🔧 تهيئة المكونات الأساسية...');
         
         const normalizer = new ArabicNormalizer();
         
         // استخدام VectorEngineV7
         const vectorEngine = new VectorEngineV7(normalizer);
-        
-        // محاولة تحميل النموذج
-        try {
-          await vectorEngine.initialize();
-        } catch (modelError) {
-          console.warn('⚠️ فشل تحميل نموذج المتجهات:', modelError.message);
-          console.log('📝 استخدام وضع Fallback للبحث النصي فقط');
-        }
+        await vectorEngine.initialize();
         
         const intentClassifier = new IntentClassifier(normalizer, vectorEngine);
         const dbManager = new IndexedDBManager();
@@ -133,9 +217,10 @@
         const voiceHandler = new VoiceHandler();
         const typewriter = new TypewriterEffect();
         
-        console.log('✅ تم إنشاء جميع المكونات');
+        console.log('✅ تم تهيئة جميع المكونات');
 
         // === المرحلة 4: تهيئة النواة الرئيسية ===
+        updateProgress('🧠 تهيئة النواة الرئيسية...');
         console.log('🧠 تهيئة النواة الرئيسية...');
         
         const aiCore = new AIExpertCore();
@@ -146,16 +231,21 @@
         aiCore.learningSystem = learningSystem;
         aiCore.queryParser = queryParser;
         
+        // 🔥 ربط قواعد البيانات (المتجهية + النصية)
         aiCore.vectorDatabases = {
           activity: window.activityVectors,
           decision104: window.decision104Vectors,
           industrial: window.industrialVectors
         };
+
+        // 🔥 ربط قواعد البيانات النصية
+        aiCore.textDatabases = window.textDatabases;
         
         await aiCore.initialize();
         console.log('✅ النواة الرئيسية جاهزة');
 
         // === المرحلة 5: تهيئة الواجهة ===
+        updateProgress('🎨 تهيئة واجهة المستخدم...');
         console.log('🎨 تهيئة واجهة المستخدم...');
         
         const uiController = new UIController(
@@ -168,38 +258,106 @@
         await uiController.initialize();
         console.log('✅ الواجهة جاهزة');
 
-        // === حفظ في window ===
+        // === حفظ في window للوصول العام ===
         window.aiAssistant = {
           core: aiCore,
           ui: uiController,
           voice: voiceHandler,
           typewriter: typewriter,
           vectorEngine: vectorEngine,
-          transformers: window.transformers,
+          textDatabases: window.textDatabases,
+          
+          // دوال مساعدة
           stats: () => {
-            console.log('📊 إحصائيات النظام:');
-            console.log('   - إحصائيات AI:', aiCore.getStatistics());
-            console.log('   - إحصائيات المتجهات:', vectorEngine.getStatistics());
-            console.log('   - إحصائيات التعلم:', learningSystem.getStatistics());
-            console.log('   - Transformers محملة:', !!window.transformers?.pipeline);
+            console.log('');
+            console.log('📊 ════════════════════════════════════════');
+            console.log('📊 إحصائيات النظام الكاملة');
+            console.log('📊 ════════════════════════════════════════');
+            console.log('');
+            console.log('🧠 النواة الرئيسية:', aiCore.getStatistics());
+            console.log('');
+            console.log('🔢 محرك المتجهات:', vectorEngine.getStatistics());
+            console.log('');
+            console.log('📚 نظام التعلم:', learningSystem.getStatistics());
+            console.log('');
+            console.log('📁 قواعد البيانات النصية:', {
+              activities: window.textDatabases.activities.length,
+              decision104: Object.keys(window.textDatabases.decision104).length,
+              industrial: window.textDatabases.industrial.length
+            });
+            console.log('');
+          },
+          
+          // البحث المباشر في القواعد النصية
+          searchText: (query, db = 'all') => {
+            const normalized = normalizer.normalize(query);
+            const results = { activities: [], decision104: [], industrial: [] };
+            
+            if (db === 'all' || db === 'activities') {
+              results.activities = window.textDatabases.activities.filter(item => {
+                const text = JSON.stringify(item).toLowerCase();
+                return text.includes(normalized.toLowerCase());
+              });
+            }
+            
+            if (db === 'all' || db === 'industrial') {
+              results.industrial = window.textDatabases.industrial.filter(item => {
+                const text = JSON.stringify(item).toLowerCase();
+                return text.includes(normalized.toLowerCase());
+              });
+            }
+            
+            console.log('🔍 نتائج البحث النصي:', results);
+            return results;
           }
         };
 
         // إخفاء شاشة التحميل
         document.getElementById('loading-screen').style.display = 'none';
 
+        // رسالة النجاح
         console.log('');
         console.log('🎉 ════════════════════════════════════════');
-        console.log('✅ المساعد الذكي جاهز للعمل!');
+        console.log('✅ المساعد الذكي جاهز للعمل بالكامل!');
         console.log('🎉 ════════════════════════════════════════');
+        console.log('');
+        console.log('📊 قواعد البيانات المحملة:');
+        console.log('   • المتجهات (vectors):');
+        console.log('      - الأنشطة:', window.activityVectors?.data?.length || 0);
+        console.log('      - القرار 104:', window.decision104Vectors?.data?.length || 0);
+        console.log('      - المناطق الصناعية:', window.industrialVectors?.data?.length || 0);
+        console.log('');
+        console.log('   • البيانات النصية (text databases):');
+        console.log('      - masterActivityDB:', masterActivityDB?.length || 0);
+        console.log('      - decision104DB:', typeof decision104DB === 'object' ? '✓' : '✗');
+        console.log('      - industrialDB:', industrialDB?.length || 0);
+        console.log('');
+        console.log('💡 يمكنك الآن:');
+        console.log('   • الضغط على الأيقونة العائمة 🤖');
+        console.log('   • استخدام المايك للتحدث 🎤');
+        console.log('   • الكتابة مباشرة ⌨️');
+        console.log('');
+        console.log('🔧 أوامر مفيدة:');
+        console.log('   • aiAssistant.stats() - عرض الإحصائيات');
+        console.log('   • aiAssistant.searchText("فندق") - بحث نصي مباشر');
         console.log('');
 
       } catch (error) {
         console.error('❌ فشل تحميل النظام:', error);
+        
         document.getElementById('loading-screen').innerHTML = `
-          <div style="color: white; text-align: center;">
+          <div style="color: white; text-align: center; padding: 20px; max-width: 600px;">
             <h2 style="color: #ef4444; margin-bottom: 20px;">❌ خطأ في التحميل</h2>
-            <p style="margin-bottom: 20px;">${error.message}</p>
+            <div style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+              <p style="margin-bottom: 10px; font-weight: bold;">${error.message}</p>
+              <pre style="text-align: left; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; overflow: auto; max-height: 200px; font-size: 12px;">${error.stack || 'لا توجد معلومات إضافية'}</pre>
+            </div>
+            <p style="margin-bottom: 20px; opacity: 0.8;">تأكد من:</p>
+            <ul style="text-align: right; list-style: none; padding: 0; margin-bottom: 20px;">
+              <li style="margin: 10px 0;">✓ وجود جميع الملفات في المجلد الصحيح</li>
+              <li style="margin: 10px 0;">✓ تحميل الملفات المشوشة (activity_database-s.js, etc.)</li>
+              <li style="margin: 10px 0;">✓ تشغيل المشروع على localhost أو server</li>
+            </ul>
             <button onclick="location.reload()" 
                     style="padding: 12px 24px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
               🔄 إعادة المحاولة
@@ -207,10 +365,8 @@
           </div>
         `;
       }
-    }
-
-    // بدء التطبيق
-    initializeApplication();
+    })();
   </script>
+
 </body>
 </html>
