@@ -4,6 +4,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- حل بديل للمتصفحات القديمة -->
+  <script>
+    // التحميل المباشر لمكتبة Transformers
+    if (!window.transformers) {
+      console.log('🔧 تحميل مكتبة Transformers.js...');
+      var script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0/dist/transformers.min.js';
+      script.onload = function() {
+        console.log('✅ تم تحميل مكتبة Transformers.js');
+      };
+      document.head.appendChild(script);
+    }
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>مساعد اللجان  - GAFI AI Assistant</title>
   
   <!-- CSS -->
@@ -268,3 +284,4 @@
 
 </body>
 </html>
+
