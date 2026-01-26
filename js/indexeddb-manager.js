@@ -12,7 +12,7 @@
 class IndexedDBManager {
   constructor() {
     this.dbName = 'GAFI_AI_Brain';
-    this.version = 3;
+    this.version = 4;
     this.db = null;
 
     // أسماء المخازن (Stores)
@@ -528,4 +528,5 @@ class IndexedDBManager {
 // تصدير الكلاس
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = IndexedDBManager;
+
 }
