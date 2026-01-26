@@ -1,180 +1,216 @@
 
-/**
- * 🤖 محمل Transformers.js - دعم ES Module
- * @version 2.0.0
- */
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مساعد اللجان الذكي - GAFI AI Assistant</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/ai-assistant.css">
+  
+  <style>
+    /* ... نفس الـ CSS السابق ... */
+  </style>
+</head>
+<body>
 
-class TransformersLoader {
-  constructor() {
-    this.pipeline = null;
-    this.isLoaded = false;
-    this.isLoading = false;
-    this.loadError = null;
-    this.useESModule = false;
-  }
+  <!-- شاشة التحميل -->
+  <div id="loading-screen">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">جاري تحميل المساعد الذكي...</div>
+  </div>
 
-  /**
-   * 🚀 تحميل نموذج Transformers.js
-   */
-  async load() {
-    if (this.isLoaded) {
-      return { success: true, model: this.pipeline };
-    }
+  <!-- المحتوى الرئيسي -->
+  <div class="main-content">
+    <div class="header">
+      <h1>🤖 مساعد اللجان الذكي</h1>
+      <p>مستشار خبير للهيئة العامة للاستثمار والمناطق الحرة</p>
+    </div>
+  </div>
 
-    if (this.isLoading) {
-      console.log('⏳ النموذج قيد التحميل...');
-      return new Promise((resolve) => {
-        const checkInterval = setInterval(() => {
-          if (this.isLoaded) {
-            clearInterval(checkInterval);
-            resolve({ success: true, model: this.pipeline });
-          } else if (this.loadError) {
-            clearInterval(checkInterval);
-            resolve({ success: false, error: this.loadError });
-          }
-        }, 500);
-      });
-    }
+  <!-- تحميل التطبيق كـ ES Module -->
+  <script type="module">
+    // ============ جزء 1: تحميل مكتبة Transformers.js كـ ES Module ============
+    console.log('📦 تحميل مكتبة Transformers.js كـ ES Module...');
+    
+    // استيراد المكتبة بشكل صحيح كـ ES Module
+    import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+    
+    // تهيئة البيئة
+    env.allowLocalModels = false;
+    
+    // حفظ في window للوصول من السكريبتات القديمة
+    window.transformers = { pipeline, env };
+    window.transformersLoaded = true;
+    
+    console.log('✅ تم تحميل Transformers.js كـ ES Module');
+    console.log('   - pipeline:', typeof pipeline);
+    console.log('   - env:', env);
 
-    this.isLoading = true;
+    // ============ جزء 2: تحويل المكونات الحالية إلى ES Modules ============
+    // لن نحتاج إلى هذا لأننا سنعدل transformers-loader.js
 
-    try {
-      console.log('📦 بدء تحميل نموذج المتجهات...');
+    // ============ جزء 3: تحميل المكونات الأساسية كـ Modules ============
+    const modulesToLoad = [
+      './js/arabic-normalizer.js',
+      './js/transformers-loader.js',
+      './js/vector-engine-v7.js',
+      './js/intent-classifier.js',
+      './js/indexeddb-manager.js',
+      './js/query-parser.js',
+      './js/learning-system.js',
+      './js/response-generator.js',
+      './js/ai-expert-core.js',
+      './js/voice-handler.js',
+      './js/typewriter-effect.js',
+      './js/ui-controller.js'
+    ];
 
-      // محاولة 1: استخدام window.transformers إذا كان محملاً
-      if (window.transformers && window.transformers.pipeline) {
-        console.log('✅ استخدام Transformers.js من window.transformers');
-        return await this._loadFromWindow();
-      }
-
-      // محاولة 2: استخدام ES Module ديناميكي
-      console.log('🔄 محاولة تحميل كـ ES Module...');
-      return await this._loadAsESModule();
-
-    } catch (error) {
-      console.error('❌ فشل تحميل النموذج:', error);
-      this.loadError = error;
-      this.isLoading = false;
-      
-      return { 
-        success: false, 
-        error: error.message,
-        fallback: true 
-      };
-    }
-  }
-
-  /**
-   * 📥 التحميل من window.transformers
-   */
-  async _loadFromWindow() {
-    try {
-      const { pipeline } = window.transformers;
-      
-      this.pipeline = await pipeline(
-        'feature-extraction',
-        'Xenova/paraphrase-multilingual-MiniLM-L12-v2',
-        {
-          quantized: true,
-          progress_callback: (progress) => {
-            if (progress.status === 'progress') {
-              console.log(`⏳ التحميل: ${progress.file} - ${Math.round(progress.progress || 0)}%`);
-            }
-          }
+    async function loadModule(src) {
+      try {
+        const module = await import(src);
+        // إذا كان للموديل exports default، نحفظه
+        if (module.default) {
+          const className = module.default.name || src.split('/').pop().replace('.js', '');
+          window[className] = module.default;
         }
-      );
-
-      this.isLoaded = true;
-      this.isLoading = false;
-      
-      console.log('✅ تم تحميل نموذج المتجهات بنجاح!');
-      
-      return { success: true, model: this.pipeline };
-
-    } catch (error) {
-      throw new Error(`فشل التحميل من window: ${error.message}`);
-    }
-  }
-
-  /**
-   * 🔄 التحميل كـ ES Module
-   */
-  async _loadAsESModule() {
-    try {
-      // استخدام import() الديناميكي
-      const transformersModule = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2');
-      
-      const { pipeline } = transformersModule;
-      
-      this.pipeline = await pipeline(
-        'feature-extraction',
-        'Xenova/paraphrase-multilingual-MiniLM-L12-v2',
-        {
-          quantized: true,
-          progress_callback: (progress) => {
-            if (progress.status === 'progress') {
-              console.log(`⏳ التحميل: ${progress.file} - ${Math.round(progress.progress || 0)}%`);
-            }
-          }
-        }
-      );
-
-      this.isLoaded = true;
-      this.isLoading = false;
-      this.useESModule = true;
-      
-      console.log('✅ تم تحميل نموذج المتجهات كـ ES Module!');
-      
-      return { success: true, model: this.pipeline };
-
-    } catch (error) {
-      throw new Error(`فشل تحميل ES Module: ${error.message}`);
-    }
-  }
-
-  /**
-   * 🔢 توليد متجه من نص
-   */
-  async generateEmbedding(text) {
-    if (!this.isLoaded) {
-      const loadResult = await this.load();
-      if (!loadResult.success) {
-        throw new Error('النموذج غير محمل');
+        return module;
+      } catch (error) {
+        console.error(`❌ فشل تحميل ${src}:`, error);
+        throw error;
       }
     }
 
-    try {
-      const output = await this.pipeline(text, {
-        pooling: 'mean',
-        normalize: true
-      });
+    async function initializeApplication() {
+      try {
+        console.log('🚀 بدء تحميل نظام المساعد الذكي...');
 
-      const embedding = Array.from(output.data);
-      return embedding;
+        // === المرحلة 1: تحميل قواعد البيانات ===
+        console.log('📦 تحميل قواعد البيانات...');
+        
+        const [activityVectors, decision104Vectors, industrialVectors] = await Promise.all([
+          import('./data/activity_vectors.js'),
+          import('./data/decision104_vectors.js'),
+          import('./data/industrial_vectors.js')
+        ]);
 
-    } catch (error) {
-      console.error('❌ خطأ في توليد المتجه:', error);
-      throw error;
+        window.activityVectors = activityVectors.default;
+        window.decision104Vectors = decision104Vectors.default;
+        window.industrialVectors = industrialVectors.default;
+
+        console.log('✅ تم تحميل قواعد البيانات');
+
+        // === المرحلة 2: تحميل المكونات ===
+        console.log('🔧 تحميل المكونات الأساسية...');
+        
+        // تحميل جميع المكونات
+        for (const moduleSrc of modulesToLoad) {
+          await loadModule(moduleSrc);
+        }
+
+        // === المرحلة 3: إنشاء الكائنات ===
+        console.log('🔨 إنشاء كائنات المكونات...');
+        
+        const normalizer = new ArabicNormalizer();
+        
+        // استخدام VectorEngineV7
+        const vectorEngine = new VectorEngineV7(normalizer);
+        
+        // محاولة تحميل النموذج
+        try {
+          await vectorEngine.initialize();
+        } catch (modelError) {
+          console.warn('⚠️ فشل تحميل نموذج المتجهات:', modelError.message);
+          console.log('📝 استخدام وضع Fallback للبحث النصي فقط');
+        }
+        
+        const intentClassifier = new IntentClassifier(normalizer, vectorEngine);
+        const dbManager = new IndexedDBManager();
+        const learningSystem = new LearningSystem(dbManager, normalizer);
+        const queryParser = new QueryParser(normalizer, intentClassifier);
+        const responseGenerator = new ResponseGenerator();
+        const voiceHandler = new VoiceHandler();
+        const typewriter = new TypewriterEffect();
+        
+        console.log('✅ تم إنشاء جميع المكونات');
+
+        // === المرحلة 4: تهيئة النواة الرئيسية ===
+        console.log('🧠 تهيئة النواة الرئيسية...');
+        
+        const aiCore = new AIExpertCore();
+        aiCore.normalizer = normalizer;
+        aiCore.vectorEngine = vectorEngine;
+        aiCore.intentClassifier = intentClassifier;
+        aiCore.dbManager = dbManager;
+        aiCore.learningSystem = learningSystem;
+        aiCore.queryParser = queryParser;
+        
+        aiCore.vectorDatabases = {
+          activity: window.activityVectors,
+          decision104: window.decision104Vectors,
+          industrial: window.industrialVectors
+        };
+        
+        await aiCore.initialize();
+        console.log('✅ النواة الرئيسية جاهزة');
+
+        // === المرحلة 5: تهيئة الواجهة ===
+        console.log('🎨 تهيئة واجهة المستخدم...');
+        
+        const uiController = new UIController(
+          aiCore,
+          voiceHandler,
+          typewriter,
+          responseGenerator
+        );
+        
+        await uiController.initialize();
+        console.log('✅ الواجهة جاهزة');
+
+        // === حفظ في window ===
+        window.aiAssistant = {
+          core: aiCore,
+          ui: uiController,
+          voice: voiceHandler,
+          typewriter: typewriter,
+          vectorEngine: vectorEngine,
+          transformers: window.transformers,
+          stats: () => {
+            console.log('📊 إحصائيات النظام:');
+            console.log('   - إحصائيات AI:', aiCore.getStatistics());
+            console.log('   - إحصائيات المتجهات:', vectorEngine.getStatistics());
+            console.log('   - إحصائيات التعلم:', learningSystem.getStatistics());
+            console.log('   - Transformers محملة:', !!window.transformers?.pipeline);
+          }
+        };
+
+        // إخفاء شاشة التحميل
+        document.getElementById('loading-screen').style.display = 'none';
+
+        console.log('');
+        console.log('🎉 ════════════════════════════════════════');
+        console.log('✅ المساعد الذكي جاهز للعمل!');
+        console.log('🎉 ════════════════════════════════════════');
+        console.log('');
+
+      } catch (error) {
+        console.error('❌ فشل تحميل النظام:', error);
+        document.getElementById('loading-screen').innerHTML = `
+          <div style="color: white; text-align: center;">
+            <h2 style="color: #ef4444; margin-bottom: 20px;">❌ خطأ في التحميل</h2>
+            <p style="margin-bottom: 20px;">${error.message}</p>
+            <button onclick="location.reload()" 
+                    style="padding: 12px 24px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
+              🔄 إعادة المحاولة
+            </button>
+          </div>
+        `;
+      }
     }
-  }
 
-  /**
-   * 📊 الحصول على الحالة
-   */
-  getStatus() {
-    return {
-      isLoaded: this.isLoaded,
-      isLoading: this.isLoading,
-      hasError: !!this.loadError,
-      error: this.loadError?.message,
-      useESModule: this.useESModule
-    };
-  }
-}
-
-// Export for ES Module
-if (typeof window !== 'undefined') {
-  window.TransformersLoader = TransformersLoader;
-}
-
-export default TransformersLoader;
+    // بدء التطبيق
+    initializeApplication();
+  </script>
+</body>
+</html>
