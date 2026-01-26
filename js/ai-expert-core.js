@@ -1,8 +1,8 @@
 /**
- * 🧠 النواة الرئيسية للمساعد الذكي - مع مؤشرات التقدم
- * AI Expert Core Engine - With Progress Indicators
+ * 🧠 النواة الرئيسية للمساعد الذكي - منطق قبول محسّن
+ * AI Expert Core Engine - Better Result Acceptance
  * 
- * @version 2.2.0 - PROGRESS INDICATORS
+ * @version 2.3.0 - FIXED RESULT ACCEPTANCE
  */
 
 class AIExpertCore {
@@ -17,8 +17,7 @@ class AIExpertCore {
     this.initialized = false;
     this.isProcessing = false;
     
-    // 🔥 إضافة callback للحالة
-    this.onStatusChange = null; // دالة callback لتحديث الواجهة
+    this.onStatusChange = null;
     
     this.contextMemory = {
       lastQuery: null,
@@ -56,23 +55,24 @@ class AIExpertCore {
       authorities: new Set(),
       keywords: new Map()
     };
+
+    // 🔥 عتبات قبول النتائج - أكثر تساهلاً
+    this.acceptanceThresholds = {
+      excellent: 0.65,  // نتائج ممتازة - قبول فوري
+      good: 0.50,       // نتائج جيدة - قبول
+      fair: 0.35,       // نتائج مقبولة - قبول مع تحذير
+      minimal: 0.25     // الحد الأدنى - قبول للإحصائيات فقط
+    };
   }
 
-  /**
-   * 🔔 تحديث حالة المعالجة
-   */
   _updateStatus(status, details = {}) {
     if (this.onStatusChange && typeof this.onStatusChange === 'function') {
       this.onStatusChange({ status, ...details });
     }
     
-    // console.log للتتبع
     console.log(`📍 ${status}`, details);
   }
 
-  /**
-   * 🚀 التهيئة الكاملة للنظام
-   */
   async initialize() {
     if (this.initialized) {
       console.log('✅ النظام مهيأ بالفعل');
@@ -83,53 +83,44 @@ class AIExpertCore {
     const startTime = performance.now();
 
     try {
-      // 1. تهيئة المكونات الأساسية
       this._updateStatus('تهيئة المكونات الأساسية...');
       console.log('📦 تهيئة المكونات الأساسية...');
       this.normalizer = new ArabicNormalizer();
       this.dbManager = new IndexedDBManager();
       await this.dbManager.init();
 
-      // 2. تحميل قواعد البيانات
       this._updateStatus('تحميل قواعد البيانات...');
       console.log('🔍 تحميل قواعد البيانات...');
       await this._loadAllDatabases();
 
-      // 3. التحقق من وجود بيانات
       if (!this._validateDatabases()) {
         throw new Error('❌ فشل التحقق من قواعد البيانات!');
       }
 
-      // 4. بناء الفهرس
       this._updateStatus('بناء الفهرس...');
       console.log('🗂️ بناء الفهرس...');
       await this._buildMetaIndex();
 
-      // 5. تهيئة محرك المتجهات
       this._updateStatus('تهيئة محرك المتجهات...');
       console.log('⚡ تهيئة محرك المتجهات...');
       this.vectorEngine = new VectorEngineV7(this.normalizer);
       await this.vectorEngine.initialize();
       await this.vectorEngine.loadDatabases(this.vectorDatabases);
 
-      // 6. تهيئة مصنف النوايا
       this._updateStatus('تهيئة مصنف النوايا...');
       console.log('🎯 تهيئة مصنف النوايا...');
       this.intentClassifier = new IntentClassifier(this.normalizer, this.vectorEngine);
       this.intentClassifier.loadKnownEntities(this.metaIndex);
 
-      // 7. تهيئة نظام التعلم
       this._updateStatus('تهيئة نظام التعلم...');
       console.log('🧠 تهيئة نظام التعلم...');
       this.learningSystem = new LearningSystem(this.dbManager, this.normalizer);
       await this.learningSystem.initialize();
 
-      // 8. تهيئة محلل الاستعلامات
       this._updateStatus('تهيئة محلل الاستعلامات...');
       console.log('🔍 تهيئة محلل الاستعلامات...');
       this.queryParser = new QueryParser(this.normalizer, this.intentClassifier);
 
-      // 9. تحميل الذاكرة السياقية
       const savedContext = await this.dbManager.loadContext();
       if (savedContext) {
         this.contextMemory = { ...this.contextMemory, ...savedContext };
@@ -146,12 +137,6 @@ class AIExpertCore {
       console.log('✅ ════════════════════════════════════════');
       console.log(`⏱️ الزمن الكلي: ${totalTime} ثانية`);
       console.log('');
-      console.log('📊 إحصائيات قواعد البيانات:');
-      console.log('   📁 المتجهات (Vectors):');
-      console.log(`      • الأنشطة: ${this.vectorDatabases.activity?.data?.length || 0} سجل`);
-      console.log(`      • القرار 104: ${this.vectorDatabases.decision104?.data?.length || 0} سجل`);
-      console.log(`      • المناطق الصناعية: ${this.vectorDatabases.industrial?.data?.length || 0} سجل`);
-      console.log('');
 
       return true;
 
@@ -163,14 +148,10 @@ class AIExpertCore {
     }
   }
 
-  /**
-   * ✅ تحميل جميع قواعد البيانات
-   */
   async _loadAllDatabases() {
     console.log('📥 تحميل قواعد البيانات من الملفات...');
 
     try {
-      // 1. تحميل قواعد المتجهات
       console.log('   🔢 تحميل قواعد المتجهات...');
       
       if (window.activityVectors && window.decision104Vectors && window.industrialVectors) {
@@ -191,17 +172,12 @@ class AIExpertCore {
         this.vectorDatabases.industrial = industrialVectors.default;
       }
 
-      console.log('   ✅ تم تحميل قواعد المتجهات:');
-      console.log(`      - الأنشطة: ${this.vectorDatabases.activity?.data?.length || 0}`);
-      console.log(`      - القرار 104: ${this.vectorDatabases.decision104?.data?.length || 0}`);
-      console.log(`      - المناطق: ${this.vectorDatabases.industrial?.data?.length || 0}`);
+      console.log('   ✅ تم تحميل قواعد المتجهات');
 
-      // 2. تحميل قواعد البيانات النصية
       console.log('   📝 ربط قواعد البيانات النصية...');
       
       if (typeof window.textDatabases !== 'undefined') {
         this.textDatabases = window.textDatabases;
-        console.log('   ✅ تم ربط قواعد البيانات النصية من window');
       } else if (typeof masterActivityDB !== 'undefined' && 
                  typeof decision104DB !== 'undefined' && 
                  typeof industrialDB !== 'undefined') {
@@ -210,7 +186,6 @@ class AIExpertCore {
           decision104: decision104DB,
           industrial: industrialDB
         };
-        console.log('   ✅ تم ربط قواعد البيانات النصية من المتغيرات العامة');
       }
 
       return true;
@@ -233,10 +208,6 @@ class AIExpertCore {
         console.error(`❌ قاعدة ${dbName} غير صالحة!`);
         isValid = false;
         return;
-      }
-
-      if (db.data.length === 0) {
-        console.warn(`⚠️ قاعدة ${dbName} فارغة!`);
       }
 
       let validRecords = 0;
@@ -262,9 +233,6 @@ class AIExpertCore {
     return isValid;
   }
 
-  /**
-   * 💬 معالجة استعلام المستخدم - مع مؤشرات التقدم
-   */
   async processQuery(userQuery, options = {}) {
     if (!this.initialized) {
       throw new Error('النظام غير مهيأ! استخدم initialize() أولاً');
@@ -286,14 +254,12 @@ class AIExpertCore {
       console.log('💬 استعلام جديد:', userQuery);
       this._updateStatus('processing', { step: 'تحليل السؤال...' });
 
-      // 1. التطبيع والمعالجة اللغوية
       const normalized = options.isVoice 
         ? this.normalizer.normalizeForVoice(userQuery)
         : this.normalizer.normalize(userQuery);
 
       console.log('📝 النص بعد المعالجة:', normalized);
 
-      // 2. حل الضمائر
       this._updateStatus('processing', { step: 'فهم السياق...' });
       const resolvedQuery = this.intentClassifier.resolvePronouns(
         normalized, 
@@ -302,7 +268,6 @@ class AIExpertCore {
 
       console.log('🔄 النص بعد حل الضمائر:', resolvedQuery);
 
-      // 3. البحث في الذاكرة
       this._updateStatus('processing', { step: 'البحث في الذاكرة...' });
       const learnedAnswer = await this.learningSystem.searchLearned(resolvedQuery);
       if (learnedAnswer) {
@@ -311,7 +276,6 @@ class AIExpertCore {
         return this._formatLearnedResponse(learnedAnswer);
       }
 
-      // 4. تصنيف النية
       this._updateStatus('processing', { step: 'تصنيف نوع السؤال...' });
       const intentClassification = await this.intentClassifier.classifyIntent(resolvedQuery);
       console.log('🎯 تصنيف النية:', {
@@ -321,13 +285,11 @@ class AIExpertCore {
         databases: intentClassification.suggestedDatabases
       });
 
-      // 5. بناء الاستعلامات الفرعية
       const subQueries = this.intentClassifier.buildSubQueries(
         resolvedQuery,
         intentClassification
       );
 
-      // 6. تنفيذ الاستراتيجية المناسبة
       this._updateStatus('processing', { step: 'البحث في قواعد البيانات...' });
       let response;
 
@@ -341,11 +303,9 @@ class AIExpertCore {
         response = await this._handleSimpleQuery(resolvedQuery, intentClassification);
       }
 
-      // 7. تحديث الذاكرة السياقية
       this._updateStatus('processing', { step: 'حفظ النتائج...' });
       await this._updateContextMemory(userQuery, response, intentClassification);
 
-      // 8. حفظ في سجل المحادثة
       this._addToConversationHistory({
         query: userQuery,
         normalized: normalized,
@@ -353,7 +313,6 @@ class AIExpertCore {
         timestamp: new Date().toISOString()
       });
 
-      // 9. تحديث الإحصائيات
       const responseTime = performance.now() - startTime;
       this.stats.successfulQueries++;
       this._updateAverageResponseTime(responseTime);
@@ -379,28 +338,18 @@ class AIExpertCore {
   }
 
   /**
-   * ✅ معالجة سؤال بسيط
+   * ✅ معالجة سؤال بسيط - محسّن مع منطق قبول أفضل
    */
   async _handleSimpleQuery(query, classification) {
     console.log('✅ معالجة سؤال بسيط...');
 
     const results = await this.vectorEngine.parallelSearch(query, {
-      topK: 5,
+      topK: 10, // ✅ زيادة عدد النتائج
       databases: classification.suggestedDatabases,
       queryType: classification.queryType
     });
 
     const totalResults = results.totalResults || 0;
-
-    if (totalResults === 0) {
-      return {
-        success: false,
-        type: 'no_results',
-        message: `لم أجد معلومات دقيقة كافية للإجابة على "${query}". لقد بحثت في: ${classification.suggestedDatabases.join(', ')}.`,
-        query,
-        searchedIn: classification.suggestedDatabases
-      };
-    }
 
     // دمج النتائج من جميع القواعد
     const allResults = [];
@@ -413,20 +362,84 @@ class AIExpertCore {
     // ترتيب حسب التشابه
     allResults.sort((a, b) => b.similarity - a.similarity);
 
+    console.log(`📊 إجمالي النتائج: ${allResults.length}`);
+    
+    if (allResults.length > 0) {
+      console.log(`   🎯 أعلى تشابه: ${(allResults[0].similarity * 100).toFixed(1)}%`);
+      console.log(`   📈 نطاق التشابه: ${(allResults[allResults.length-1].similarity * 100).toFixed(1)}% - ${(allResults[0].similarity * 100).toFixed(1)}%`);
+    }
+
+    // 🔥 منطق قبول محسّن
+    if (allResults.length === 0) {
+      return {
+        success: false,
+        type: 'no_results',
+        message: `لم أجد أي نتائج للبحث عن "${query}". حاول إعادة صياغة السؤال بكلمات مختلفة.`,
+        query,
+        searchedIn: classification.suggestedDatabases
+      };
+    }
+
+    const topSimilarity = allResults[0].similarity;
+
+    // ✅ قبول النتائج بناءً على جودة التشابه
+    let acceptedResults = [];
+    let qualityLevel = '';
+
+    if (topSimilarity >= this.acceptanceThresholds.excellent) {
+      // نتائج ممتازة - نأخذ أفضل 5
+      acceptedResults = allResults.filter(r => r.similarity >= this.acceptanceThresholds.good).slice(0, 5);
+      qualityLevel = 'excellent';
+      console.log('✅ نتائج ممتازة');
+    } else if (topSimilarity >= this.acceptanceThresholds.good) {
+      // نتائج جيدة - نأخذ أفضل 5
+      acceptedResults = allResults.filter(r => r.similarity >= this.acceptanceThresholds.fair).slice(0, 5);
+      qualityLevel = 'good';
+      console.log('✅ نتائج جيدة');
+    } else if (topSimilarity >= this.acceptanceThresholds.fair) {
+      // نتائج مقبولة - نأخذ أفضل 5
+      acceptedResults = allResults.filter(r => r.similarity >= this.acceptanceThresholds.minimal).slice(0, 5);
+      qualityLevel = 'fair';
+      console.log('✅ نتائج مقبولة');
+    } else if (topSimilarity >= this.acceptanceThresholds.minimal) {
+      // نتائج ضعيفة - نأخذ أفضل 3 فقط
+      acceptedResults = allResults.slice(0, 3);
+      qualityLevel = 'weak';
+      console.log('⚠️ نتائج ضعيفة');
+    }
+
+    console.log(`📌 تم قبول ${acceptedResults.length} نتيجة`);
+
+    // ✅ إذا لم يكن هناك نتائج مقبولة
+    if (acceptedResults.length === 0) {
+      return {
+        success: false,
+        type: 'low_quality',
+        message: `وجدت ${allResults.length} نتيجة، لكن جودة التشابه منخفضة (${(topSimilarity * 100).toFixed(1)}%). حاول إعادة صياغة السؤال.`,
+        query,
+        searchedIn: classification.suggestedDatabases,
+        topSimilarity
+      };
+    }
+
+    // ✅ إرجاع النتائج المقبولة
     return {
       success: true,
       type: 'simple',
-      results: allResults.slice(0, 5),
-      totalFound: totalResults,
+      results: acceptedResults,
+      totalFound: allResults.length,
+      acceptedCount: acceptedResults.length,
       query,
       searchedIn: classification.suggestedDatabases,
-      topSimilarity: allResults[0]?.similarity || 0
+      topSimilarity,
+      qualityLevel,
+      // ✅ رسالة توضيحية للنتائج الضعيفة
+      note: qualityLevel === 'weak' 
+        ? 'تم العثور على نتائج ذات تشابه منخفض. قد لا تكون دقيقة تماماً.'
+        : null
     };
   }
 
-  /**
-   * 📊 معالجة سؤال إحصائي
-   */
   async _handleStatisticalQuery(query, classification) {
     console.log('📊 معالجة سؤال إحصائي...');
 
@@ -459,13 +472,11 @@ class AIExpertCore {
 
   _handleComparativeQuery(query, classification) {
     console.log('🔄 معالجة سؤال مقارن...');
-    // تنفيذ بسيط
     return this._handleSimpleQuery(query, classification);
   }
 
   _handleCrossReferenceQuery(subQueries, classification) {
     console.log('🔗 معالجة سؤال متقاطع...');
-    // تنفيذ بسيط
     return this._handleSimpleQuery(subQueries[0]?.query || '', classification);
   }
 
@@ -524,13 +535,6 @@ class AIExpertCore {
       activities: Array.from(activities).slice(0, 500),
       authorities: Array.from(authorities)
     };
-
-    console.log('✅ تم بناء الفهرس:', {
-      governorates: this.metaIndex.governorates.length,
-      locations: this.metaIndex.locations.length,
-      activities: this.metaIndex.activities.length,
-      authorities: this.metaIndex.authorities.length
-    });
   }
 
   async _updateContextMemory(query, response, classification) {
@@ -578,6 +582,7 @@ class AIExpertCore {
   getStatistics() {
     return {
       ...this.stats,
+      acceptanceThresholds: this.acceptanceThresholds,
       contextMemory: {
         conversationLength: this.contextMemory.conversationHistory.length,
         lastEntity: this.contextMemory.lastEntity,
