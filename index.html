@@ -103,8 +103,6 @@
     </div>
   </div>
 
-  
-
   <!-- ========================================
        قواعد البيانات النصية (المشوشة)
   ======================================== -->
@@ -125,9 +123,13 @@
   <script src="js/response-generator.js"></script>
 
   <!-- ========================================
-       النواة الرئيسية
+       مكونات Progress Indicator
   ======================================== -->
   <script src="js/progress-indicator.js"></script>
+
+  <!-- ========================================
+       النواة الرئيسية
+  ======================================== -->
   <script src="js/ai-expert-core.js"></script>
 
   <!-- ========================================
@@ -141,237 +143,291 @@
        التهيئة والتشغيل
   ======================================== -->
   <script type="module">
-    const updateProgress = (msg) => {
-      const el = document.getElementById('loading-progress');
-      if (el) el.textContent = msg;
+/** 
+ * 🔧 كود التكامل الكامل - للنسخ واللصق في index.html
+ * 
+ * ضع هذا الكود في نهاية ملف index.html داخل:
+ * <script type="module">
+ */
+
+(async function() {
+  const updateProgress = (msg) => {
+    const el = document.getElementById('loading-progress');
+    if (el) el.textContent = msg;
+  };
+
+  console.log('🚀 بدء تحميل نظام المساعد الذكي...');
+
+  try {
+    // === المرحلة 1: تحميل قواعد البيانات المتجهية ===
+    updateProgress('📦 تحميل قواعد البيانات المتجهية...');
+    console.log('📦 تحميل قواعد البيانات المتجهية...');
+    
+    const [activityVectors, decision104Vectors, industrialVectors] = await Promise.all([
+      import('./data/activity_vectors.js'),
+      import('./data/decision104_vectors.js'),
+      import('./data/industrial_vectors.js')
+    ]);
+
+    window.activityVectors = activityVectors.default;
+    window.decision104Vectors = decision104Vectors.default;
+    window.industrialVectors = industrialVectors.default;
+
+    console.log('✅ تم تحميل قواعد المتجهات:', {
+      activity: activityVectors.default?.data?.length || 0,
+      decision104: decision104Vectors.default?.data?.length || 0,
+      industrial: industrialVectors.default?.data?.length || 0
+    });
+
+    // === المرحلة 2: التحقق من قواعد البيانات النصية ===
+    updateProgress('🔍 التحقق من قواعد البيانات النصية...');
+    console.log('🔍 التحقق من قواعد البيانات النصية...');
+    
+    if (typeof masterActivityDB === 'undefined') {
+      throw new Error('❌ ملف activity_database-s.js غير محمل!');
+    }
+    if (typeof decision104DB === 'undefined') {
+      throw new Error('❌ ملف decision104_database-s.js غير محمل!');
+    }
+    if (typeof industrialDB === 'undefined') {
+      throw new Error('❌ ملف industrial_database-s.js غير محمل!');
+    }
+
+    console.log('✅ قواعد البيانات النصية محملة:', {
+      masterActivityDB: Array.isArray(masterActivityDB) ? masterActivityDB.length : 'خطأ',
+      decision104DB: typeof decision104DB === 'object' ? 'موجود' : 'خطأ',
+      industrialDB: Array.isArray(industrialDB) ? industrialDB.length : 'خطأ'
+    });
+
+    window.textDatabases = {
+      activities: masterActivityDB,
+      decision104: decision104DB,
+      industrial: industrialDB
     };
 
-    (async function() {
-      console.log('🚀 بدء تحميل نظام المساعد الذكي...');
+    // === المرحلة 3: تهيئة المكونات الأساسية ===
+    updateProgress('🔧 تهيئة المكونات الأساسية...');
+    console.log('🔧 تهيئة المكونات الأساسية...');
+    
+    const normalizer = new ArabicNormalizer();
+    const vectorEngine = new VectorEngineV7(normalizer);
+    await vectorEngine.initialize();
+    
+    const intentClassifier = new IntentClassifier(normalizer, vectorEngine);
+    const dbManager = new IndexedDBManager();
+    const learningSystem = new LearningSystem(dbManager, normalizer);
+    const queryParser = new QueryParser(normalizer, intentClassifier);
+    const responseGenerator = new ResponseGenerator();
+    const voiceHandler = new VoiceHandler();
+    const typewriter = new TypewriterEffect();
+    
+    console.log('✅ تم تهيئة جميع المكونات');
 
-      try {
-        // === المرحلة 1: تحميل قواعد البيانات المتجهية ===
-        updateProgress('📦 تحميل قواعد البيانات المتجهية...');
-        console.log('📦 تحميل قواعد البيانات المتجهية...');
-        
-        const [activityVectors, decision104Vectors, industrialVectors] = await Promise.all([
-          import('./data/activity_vectors.js'),
-          import('./data/decision104_vectors.js'),
-          import('./data/industrial_vectors.js')
-        ]);
+    // === المرحلة 4: إنشاء مؤشر التقدم ===
+    updateProgress('🔄 إنشاء مؤشر التقدم...');
+    console.log('🔄 إنشاء مؤشر التقدم...');
+    
+    const progressIndicator = new ProgressIndicator();
+    console.log('✅ تم إنشاء مؤشر التقدم');
 
-        window.activityVectors = activityVectors.default;
-        window.decision104Vectors = decision104Vectors.default;
-        window.industrialVectors = industrialVectors.default;
+    // === المرحلة 5: تهيئة النواة الرئيسية ===
+    updateProgress('🧠 تهيئة النواة الرئيسية...');
+    console.log('🧠 تهيئة النواة الرئيسية...');
+    
+    const aiCore = new AIExpertCore();
+    aiCore.normalizer = normalizer;
+    aiCore.vectorEngine = vectorEngine;
+    aiCore.intentClassifier = intentClassifier;
+    aiCore.dbManager = dbManager;
+    aiCore.learningSystem = learningSystem;
+    aiCore.queryParser = queryParser;
+    
+    // 🔥 ربط قواعد البيانات (المتجهية + النصية)
+    aiCore.vectorDatabases = {
+      activity: window.activityVectors,
+      decision104: window.decision104Vectors,
+      industrial: window.industrialVectors
+    };
 
-        console.log('✅ تم تحميل قواعد المتجهات:', {
-          activity: activityVectors.default?.data?.length || 0,
-          decision104: decision104Vectors.default?.data?.length || 0,
-          industrial: industrialVectors.default?.data?.length || 0
-        });
-
-        // === المرحلة 2: التحقق من قواعد البيانات النصية ===
-        updateProgress('🔍 التحقق من قواعد البيانات النصية...');
-        console.log('🔍 التحقق من قواعد البيانات النصية...');
-        
-        if (typeof masterActivityDB === 'undefined') {
-          throw new Error('❌ ملف activity_database-s.js غير محمل!');
-        }
-        if (typeof decision104DB === 'undefined') {
-          throw new Error('❌ ملف decision104_database-s.js غير محمل!');
-        }
-        if (typeof industrialDB === 'undefined') {
-          throw new Error('❌ ملف industrial_database-s.js غير محمل!');
-        }
-
-        console.log('✅ قواعد البيانات النصية محملة:', {
-          masterActivityDB: Array.isArray(masterActivityDB) ? masterActivityDB.length : 'خطأ',
-          decision104DB: typeof decision104DB === 'object' ? 'موجود' : 'خطأ',
-          industrialDB: Array.isArray(industrialDB) ? industrialDB.length : 'خطأ'
-        });
-
-        // حفظ في window للوصول السريع
-        window.textDatabases = {
-          activities: masterActivityDB,
-          decision104: decision104DB,
-          industrial: industrialDB
-        };
-
-        // === المرحلة 3: تهيئة المكونات الأساسية ===
-        updateProgress('🔧 تهيئة المكونات الأساسية...');
-        console.log('🔧 تهيئة المكونات الأساسية...');
-        
-        const normalizer = new ArabicNormalizer();
-        
-        // استخدام VectorEngineV7
-        const vectorEngine = new VectorEngineV7(normalizer);
-        await vectorEngine.initialize();
-        
-        const intentClassifier = new IntentClassifier(normalizer, vectorEngine);
-        const dbManager = new IndexedDBManager();
-        const learningSystem = new LearningSystem(dbManager, normalizer);
-        const queryParser = new QueryParser(normalizer, intentClassifier);
-        const responseGenerator = new ResponseGenerator();
-        const voiceHandler = new VoiceHandler();
-        const typewriter = new TypewriterEffect();
-        
-        console.log('✅ تم تهيئة جميع المكونات');
-
-        // === المرحلة 4: تهيئة النواة الرئيسية ===
-        updateProgress('🧠 تهيئة النواة الرئيسية...');
-        console.log('🧠 تهيئة النواة الرئيسية...');
-        
-        const aiCore = new AIExpertCore();
-        aiCore.normalizer = normalizer;
-        aiCore.vectorEngine = vectorEngine;
-        aiCore.intentClassifier = intentClassifier;
-        aiCore.dbManager = dbManager;
-        aiCore.learningSystem = learningSystem;
-        aiCore.queryParser = queryParser;
-        
-        // 🔥 ربط قواعد البيانات (المتجهية + النصية)
-        aiCore.vectorDatabases = {
-          activity: window.activityVectors,
-          decision104: window.decision104Vectors,
-          industrial: window.industrialVectors
-        };
-
-        // 🔥 ربط قواعد البيانات النصية
-        aiCore.textDatabases = window.textDatabases;
-        
-        await aiCore.initialize();
-        console.log('✅ النواة الرئيسية جاهزة');
-
-        // === المرحلة 5: تهيئة الواجهة ===
-        updateProgress('🎨 تهيئة واجهة المستخدم...');
-        console.log('🎨 تهيئة واجهة المستخدم...');
-        
-        const uiController = new UIController(
-          aiCore,
-          voiceHandler,
-          typewriter,
-          responseGenerator
-        );
-        
-        await uiController.initialize();
-        console.log('✅ الواجهة جاهزة');
-
-        // === حفظ في window للوصول العام ===
-        window.aiAssistant = {
-          core: aiCore,
-          ui: uiController,
-          voice: voiceHandler,
-          typewriter: typewriter,
-          vectorEngine: vectorEngine,
-          textDatabases: window.textDatabases,
+    aiCore.textDatabases = window.textDatabases;
+    
+    // 🔥 ربط مؤشر التقدم بالنواة
+    aiCore.onStatusChange = (statusInfo) => {
+      console.log('📍 Status Update:', statusInfo);
+      
+      switch(statusInfo.status) {
+        case 'processing':
+          progressIndicator.show(statusInfo.step || 'جاري التفكير...');
+          break;
           
-          // دوال مساعدة
-          stats: () => {
-            console.log('');
-            console.log('📊 ════════════════════════════════════════');
-            console.log('📊 إحصائيات النظام الكاملة');
-            console.log('📊 ════════════════════════════════════════');
-            console.log('');
-            console.log('🧠 النواة الرئيسية:', aiCore.getStatistics());
-            console.log('');
-            console.log('🔢 محرك المتجهات:', vectorEngine.getStatistics());
-            console.log('');
-            console.log('📚 نظام التعلم:', learningSystem.getStatistics());
-            console.log('');
-            console.log('📁 قواعد البيانات النصية:', {
-              activities: window.textDatabases.activities.length,
-              decision104: Object.keys(window.textDatabases.decision104).length,
-              industrial: window.textDatabases.industrial.length
-            });
-            console.log('');
-          },
+        case 'complete':
+          progressIndicator.showSuccess('تم!', 1000);
+          break;
           
-          // البحث المباشر في القواعد النصية
-          searchText: (query, db = 'all') => {
-            const normalized = normalizer.normalize(query);
-            const results = { activities: [], decision104: [], industrial: [] };
-            
-            if (db === 'all' || db === 'activities') {
-              results.activities = window.textDatabases.activities.filter(item => {
-                const text = JSON.stringify(item).toLowerCase();
-                return text.includes(normalized.toLowerCase());
-              });
-            }
-            
-            if (db === 'all' || db === 'industrial') {
-              results.industrial = window.textDatabases.industrial.filter(item => {
-                const text = JSON.stringify(item).toLowerCase();
-                return text.includes(normalized.toLowerCase());
-              });
-            }
-            
-            console.log('🔍 نتائج البحث النصي:', results);
-            return results;
-          }
-        };
-
-        // إخفاء شاشة التحميل
-        document.getElementById('loading-screen').style.display = 'none';
-
-        // رسالة النجاح
-        console.log('');
-        console.log('🎉 ════════════════════════════════════════');
-        console.log('✅ المساعد الذكي جاهز للعمل بالكامل!');
-        console.log('🎉 ════════════════════════════════════════');
-        console.log('');
-        console.log('📊 قواعد البيانات المحملة:');
-        console.log('   • المتجهات (vectors):');
-        console.log('      - الأنشطة:', window.activityVectors?.data?.length || 0);
-        console.log('      - القرار 104:', window.decision104Vectors?.data?.length || 0);
-        console.log('      - المناطق الصناعية:', window.industrialVectors?.data?.length || 0);
-        console.log('');
-        console.log('   • البيانات النصية (text databases):');
-        console.log('      - masterActivityDB:', masterActivityDB?.length || 0);
-        console.log('      - decision104DB:', typeof decision104DB === 'object' ? '✓' : '✗');
-        console.log('      - industrialDB:', industrialDB?.length || 0);
-        console.log('');
-        console.log('💡 يمكنك الآن:');
-        console.log('   • الضغط على الأيقونة العائمة 🤖');
-        console.log('   • استخدام المايك للتحدث 🎤');
-        console.log('   • الكتابة مباشرة ⌨️');
-        console.log('');
-        console.log('🔧 أوامر مفيدة:');
-        console.log('   • aiAssistant.stats() - عرض الإحصائيات');
-        console.log('   • aiAssistant.searchText("فندق") - بحث نصي مباشر');
-        console.log('');
-
-      } catch (error) {
-        console.error('❌ فشل تحميل النظام:', error);
-        
-        document.getElementById('loading-screen').innerHTML = `
-          <div style="color: white; text-align: center; padding: 20px; max-width: 600px;">
-            <h2 style="color: #ef4444; margin-bottom: 20px;">❌ خطأ في التحميل</h2>
-            <div style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-              <p style="margin-bottom: 10px; font-weight: bold;">${error.message}</p>
-              <pre style="text-align: left; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; overflow: auto; max-height: 200px; font-size: 12px;">${error.stack || 'لا توجد معلومات إضافية'}</pre>
-            </div>
-            <p style="margin-bottom: 20px; opacity: 0.8;">تأكد من:</p>
-            <ul style="text-align: right; list-style: none; padding: 0; margin-bottom: 20px;">
-              <li style="margin: 10px 0;">✓ وجود جميع الملفات في المجلد الصحيح</li>
-              <li style="margin: 10px 0;">✓ تحميل الملفات المشوشة (activity_database-s.js, etc.)</li>
-              <li style="margin: 10px 0;">✓ تشغيل المشروع على localhost أو server</li>
-            </ul>
-            <button onclick="location.reload()" 
-                    style="padding: 12px 24px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
-              🔄 إعادة المحاولة
-            </button>
-          </div>
-        `;
+        case 'error':
+          progressIndicator.showError('حدث خطأ', 2000);
+          break;
+          
+        case 'ready':
+          progressIndicator.hide();
+          break;
+          
+        default:
+          console.log('Unknown status:', statusInfo);
       }
-    })();
+    };
+    
+    await aiCore.initialize();
+    console.log('✅ النواة الرئيسية جاهزة');
+
+    // === المرحلة 6: تهيئة الواجهة ===
+    updateProgress('🎨 تهيئة واجهة المستخدم...');
+    console.log('🎨 تهيئة واجهة المستخدم...');
+    
+    const uiController = new UIController(
+      aiCore,
+      voiceHandler,
+      typewriter,
+      responseGenerator
+    );
+    
+    await uiController.initialize();
+    console.log('✅ الواجهة جاهزة');
+
+    // === حفظ في window للوصول العام ===
+    window.aiAssistant = {
+      core: aiCore,
+      ui: uiController,
+      voice: voiceHandler,
+      typewriter: typewriter,
+      vectorEngine: vectorEngine,
+      textDatabases: window.textDatabases,
+      progressIndicator: progressIndicator, // ✅ إضافة المؤشر
+      
+      // دوال مساعدة
+      stats: () => {
+        console.log('');
+        console.log('📊 ════════════════════════════════════════');
+        console.log('📊 إحصائيات النظام الكاملة');
+        console.log('📊 ════════════════════════════════════════');
+        console.log('');
+        console.log('🧠 النواة الرئيسية:', aiCore.getStatistics());
+        console.log('');
+        console.log('🔢 محرك المتجهات:', vectorEngine.getStatistics());
+        console.log('');
+        console.log('📚 نظام التعلم:', learningSystem.getStatistics());
+        console.log('');
+        console.log('📁 قواعد البيانات النصية:', {
+          activities: window.textDatabases.activities.length,
+          decision104: Object.keys(window.textDatabases.decision104).length,
+          industrial: window.textDatabases.industrial.length
+        });
+        console.log('');
+      },
+      
+      // البحث المباشر في القواعد النصية
+      searchText: (query, db = 'all') => {
+        const normalized = normalizer.normalize(query);
+        const results = { activities: [], decision104: [], industrial: [] };
+        
+        if (db === 'all' || db === 'activities') {
+          results.activities = window.textDatabases.activities.filter(item => {
+            const text = JSON.stringify(item).toLowerCase();
+            return text.includes(normalized.toLowerCase());
+          });
+        }
+        
+        if (db === 'all' || db === 'industrial') {
+          results.industrial = window.textDatabases.industrial.filter(item => {
+            const text = JSON.stringify(item).toLowerCase();
+            return text.includes(normalized.toLowerCase());
+          });
+        }
+        
+        console.log('🔍 نتائج البحث النصي:', results);
+        return results;
+      },
+
+      // 🔥 اختبار مؤشر التقدم
+      testProgress: () => {
+        console.log('🧪 اختبار مؤشر التقدم...');
+        
+        progressIndicator.show('اختبار 1: جاري التحميل');
+        
+        setTimeout(() => {
+          progressIndicator.updateStep('اختبار 2: المعالجة');
+        }, 2000);
+        
+        setTimeout(() => {
+          progressIndicator.updateStep('اختبار 3: الانتهاء');
+        }, 4000);
+        
+        setTimeout(() => {
+          progressIndicator.showSuccess('تم الاختبار بنجاح!', 1500);
+        }, 6000);
+      }
+    };
+
+    // إخفاء شاشة التحميل
+    document.getElementById('loading-screen').style.display = 'none';
+
+    // رسالة النجاح
+    console.log('');
+    console.log('🎉 ════════════════════════════════════════');
+    console.log('✅ المساعد الذكي جاهز للعمل بالكامل!');
+    console.log('🎉 ════════════════════════════════════════');
+    console.log('');
+    console.log('📊 قواعد البيانات المحملة:');
+    console.log('   • المتجهات (vectors):');
+    console.log('      - الأنشطة:', window.activityVectors?.data?.length || 0);
+    console.log('      - القرار 104:', window.decision104Vectors?.data?.length || 0);
+    console.log('      - المناطق الصناعية:', window.industrialVectors?.data?.length || 0);
+    console.log('');
+    console.log('   • البيانات النصية (text databases):');
+    console.log('      - masterActivityDB:', masterActivityDB?.length || 0);
+    console.log('      - decision104DB:', typeof decision104DB === 'object' ? '✓' : '✗');
+    console.log('      - industrialDB:', industrialDB?.length || 0);
+    console.log('');
+    console.log('💡 يمكنك الآن:');
+    console.log('   • الضغط على الأيقونة العائمة 🤖');
+    console.log('   • استخدام المايك للتحدث 🎤');
+    console.log('   • الكتابة مباشرة ⌨️');
+    console.log('');
+    console.log('🔧 أوامر مفيدة:');
+    console.log('   • aiAssistant.stats() - عرض الإحصائيات');
+    console.log('   • aiAssistant.searchText("فندق") - بحث نصي مباشر');
+    console.log('   • aiAssistant.testProgress() - اختبار مؤشر التقدم');
+    console.log('   • aiAssistant.progressIndicator.show("رسالة") - عرض مؤشر');
+    console.log('');
+    console.log('🧪 اختبار مؤشر التقدم:');
+    console.log('   يمكنك الآن كتابة: aiAssistant.testProgress()');
+    console.log('');
+
+  } catch (error) {
+    console.error('❌ فشل تحميل النظام:', error);
+    
+    document.getElementById('loading-screen').innerHTML = `
+      <div style="color: white; text-align: center; padding: 20px; max-width: 600px;">
+        <h2 style="color: #ef4444; margin-bottom: 20px;">❌ خطأ في التحميل</h2>
+        <div style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+          <p style="margin-bottom: 10px; font-weight: bold;">${error.message}</p>
+          <pre style="text-align: left; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; overflow: auto; max-height: 200px; font-size: 12px;">${error.stack || 'لا توجد معلومات إضافية'}</pre>
+        </div>
+        <p style="margin-bottom: 20px; opacity: 0.8;">تأكد من:</p>
+        <ul style="text-align: right; list-style: none; padding: 0; margin-bottom: 20px;">
+          <li style="margin: 10px 0;">✓ وجود جميع الملفات في المجلد الصحيح</li>
+          <li style="margin: 10px 0;">✓ تحميل الملفات المشوشة (activity_database-s.js, etc.)</li>
+          <li style="margin: 10px 0;">✓ تشغيل المشروع على localhost أو server</li>
+        </ul>
+        <button onclick="location.reload()" 
+                style="padding: 12px 24px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
+          🔄 إعادة المحاولة
+        </button>
+      </div>
+    `;
+  }
+})();
   </script>
 
 </body>
 </html>
-
-
-
-
-
-
-
