@@ -1,8 +1,8 @@
 /**
- * 🚀 محرك المتجهات v7 - محسّن للأداء
- * Vector Engine v7 - Performance Optimized
+ * 🚀 محرك المتجهات v7 - عتبة ديناميكية ذكية
+ * Vector Engine v7 - Smart Dynamic Threshold
  * 
- * @version 7.1.0 - HIGH PERFORMANCE
+ * @version 7.2.0 - SMART THRESHOLD
  */
 
 class VectorEngineV7 {
@@ -30,14 +30,40 @@ class VectorEngineV7 {
     };
 
     this.embeddingCache = new Map();
-    this.maxCacheSize = 1000; // ✅ زيادة حجم الذاكرة
+    this.maxCacheSize = 1000;
 
-    // 🔥 عتبات ديناميكية محسّنة - أعلى للجودة
+    // 🔥 عتبات ديناميكية ذكية جداً - أكثر مرونة
     this.thresholds = {
-      simple: { min: 0.45, ideal: 0.65 },      // ✅ رفع من 0.35
-      complex: { min: 0.38, ideal: 0.55 },     // ✅ رفع من 0.28
-      statistical: { min: 0.30, ideal: 0.45 }, // ✅ رفع من 0.20
-      comparative: { min: 0.40, ideal: 0.60 }  // ✅ رفع من 0.30
+      simple: { 
+        excellent: 0.70,  // تطابق ممتاز
+        good: 0.55,       // تطابق جيد
+        fair: 0.40,       // تطابق مقبول
+        min: 0.30         // الحد الأدنى المطلق
+      },
+      complex: { 
+        excellent: 0.65,
+        good: 0.50,
+        fair: 0.35,
+        min: 0.25
+      },
+      statistical: { 
+        excellent: 0.55,
+        good: 0.40,
+        fair: 0.28,
+        min: 0.20
+      },
+      comparative: { 
+        excellent: 0.65,
+        good: 0.50,
+        fair: 0.38,
+        min: 0.28
+      },
+      technical: { // ✅ إضافة للأسئلة التقنية
+        excellent: 0.65,
+        good: 0.50,
+        fair: 0.35,
+        min: 0.25
+      }
     };
   }
 
@@ -104,7 +130,6 @@ class VectorEngineV7 {
     const normalized = this.normalizer.normalize(text);
     const cacheKey = `emb_${normalized}`;
     
-    // ✅ التحقق من الذاكرة أولاً
     if (this.embeddingCache.has(cacheKey)) {
       this.stats.cacheHits++;
       return this.embeddingCache.get(cacheKey);
@@ -112,7 +137,6 @@ class VectorEngineV7 {
 
     let embedding;
 
-    // 🔥 محاولة استخدام النموذج الحقيقي
     if (this.useRealModel && this.modelReady) {
       try {
         embedding = await this.transformersLoader.generateEmbedding(normalized);
@@ -127,7 +151,6 @@ class VectorEngineV7 {
       this.stats.fallbackSearches++;
     }
 
-    // حفظ في الذاكرة
     this._cacheEmbedding(cacheKey, embedding);
     return embedding;
   }
@@ -139,7 +162,6 @@ class VectorEngineV7 {
     const vector = new Array(this.vectorDimension).fill(0);
     const words = text.split(/\s+/).filter(w => w.length > 1);
 
-    // === طبقة 1: كلمات رئيسية ===
     words.forEach((word, idx) => {
       const hash = this._hash(word);
       const importance = 1.0 / Math.sqrt(idx + 1);
@@ -150,7 +172,6 @@ class VectorEngineV7 {
       }
     });
 
-    // === طبقة 2: Bigrams ===
     for (let i = 0; i < words.length - 1; i++) {
       const bigram = words[i] + '_' + words[i + 1];
       const hash = this._hash(bigram);
@@ -161,7 +182,6 @@ class VectorEngineV7 {
       }
     }
 
-    // === طبقة 3: تفاعلات الكلمات ===
     for (let i = 0; i < Math.min(5, words.length); i++) {
       for (let j = i + 1; j < Math.min(5, words.length); j++) {
         const interaction = this._hash(words[i] + '::' + words[j]);
@@ -186,22 +206,19 @@ class VectorEngineV7 {
     }
 
     const normalizedQuery = this.normalizer.normalize(query);
-    
-    // ✅ توليد متجه الاستعلام مرة واحدة فقط
     const queryVector = await this.generateEmbedding(normalizedQuery);
 
-    // 🔥 البحث في جميع السجلات - بدون توليد متجهات جديدة!
+    // البحث في جميع السجلات
     const results = [];
 
     for (const record of db.data) {
-      // ✅ استخدام المتجهات المحفوظة فقط
       const similarity = this._calculateSimilarityFromPrecomputed(
         queryVector,
         record,
         normalizedQuery
       );
 
-      if (similarity > 0.20) { // عتبة أولية منخفضة
+      if (similarity > 0.15) { // عتبة أولية منخفضة جداً
         results.push({
           ...record,
           similarity,
@@ -213,13 +230,14 @@ class VectorEngineV7 {
     // ترتيب حسب التشابه
     results.sort((a, b) => b.similarity - a.similarity);
 
-    // 🔥 عتبة ديناميكية ذكية
-    const threshold = this._calculateSmartThreshold(
+    // 🔥 عتبة ديناميكية ذكية جداً
+    const thresholdInfo = this._calculateSmartThreshold(
       results,
-      config.queryType || 'simple'
+      config.queryType || 'simple',
+      query
     );
 
-    const filtered = results.filter(r => r.similarity >= threshold);
+    const filtered = results.filter(r => r.similarity >= thresholdInfo.threshold);
     const topResults = filtered.slice(0, topK);
 
     const searchTime = performance.now() - startTime;
@@ -228,23 +246,23 @@ class VectorEngineV7 {
     console.log(`🔍 ${databaseName}: ${topResults.length} نتائج (${searchTime.toFixed(0)}ms)`);
     if (topResults.length > 0) {
       console.log(`   📊 أعلى تشابه: ${(topResults[0].similarity * 100).toFixed(1)}%`);
-      console.log(`   🎯 العتبة: ${(threshold * 100).toFixed(1)}%`);
+      console.log(`   🎯 العتبة: ${(thresholdInfo.threshold * 100).toFixed(1)}% (${thresholdInfo.level})`);
+    } else if (results.length > 0) {
+      console.log(`   ⚠️ كل النتائج تحت العتبة (أعلى تشابه: ${(results[0].similarity * 100).toFixed(1)}%)`);
     }
 
     return topResults;
   }
 
   /**
-   * 🎯 حساب التشابه من المتجهات المحفوظة فقط - NO GENERATION!
+   * 🎯 حساب التشابه من المتجهات المحفوظة فقط
    */
   _calculateSimilarityFromPrecomputed(queryVector, record, normalizedQuery) {
     let bestScore = 0;
 
-    // ✅ استخدام المتجهات المحفوظة فقط
     if (record.embeddings?.multilingual_minilm?.embeddings) {
       const embeddings = record.embeddings.multilingual_minilm.embeddings;
       
-      // تجربة جميع الأنواع المتاحة
       const variations = ['full', 'contextual', 'summary', 'key_phrases', 'no_stopwords'];
       const scores = [];
       
@@ -258,7 +276,6 @@ class VectorEngineV7 {
       }
       
       if (scores.length > 0) {
-        // ✅ استراتيجية ذكية: أعلى تشابه + متوسط أفضل 2
         scores.sort((a, b) => b - a);
         const topScore = scores[0];
         const top2Avg = scores.slice(0, 2).reduce((a, b) => a + b, 0) / Math.min(2, scores.length);
@@ -266,16 +283,12 @@ class VectorEngineV7 {
       }
     }
 
-    // ✅ تعزيز نصي بسيط (بدون توليد متجهات)
+    // تعزيز نصي
     const textBoost = this._calculateTextBoost(normalizedQuery, record);
     
-    // ✅ دمج ذكي
     return Math.min(1.0, bestScore * 0.85 + textBoost * 0.15);
   }
 
-  /**
-   * استخراج نص السجل
-   */
   _extractRecordText(record) {
     const data = record.original_data;
     return data.text_preview || 
@@ -286,7 +299,7 @@ class VectorEngineV7 {
   }
 
   /**
-   * 🔥 تعزيز نصي بسيط - بدون توليد متجهات
+   * 🔥 تعزيز نصي محسّن
    */
   _calculateTextBoost(query, record) {
     const recordText = this._extractRecordText(record).toLowerCase();
@@ -301,73 +314,172 @@ class VectorEngineV7 {
     queryWords.forEach(word => {
       const wordLower = word.toLowerCase();
       
-      // تطابق تام
       if (recordText.includes(wordLower)) {
         matches++;
-        boost += 0.20; // ✅ تعزيز أعلى
+        boost += 0.20;
         
-        // تطابق ككلمة كاملة (أفضل)
         const regex = new RegExp(`\\b${wordLower}\\b`, 'i');
         if (regex.test(recordText)) {
           exactMatches++;
-          boost += 0.10; // تعزيز إضافي
+          boost += 0.10;
         }
       }
     });
     
-    // تعزيز إضافي لنسبة التطابق
     if (matches > 0) {
       const matchRatio = matches / queryWords.length;
       boost += matchRatio * 0.15;
       
-      // مكافأة للتطابقات التامة
       if (exactMatches > 0) {
         boost += (exactMatches / queryWords.length) * 0.10;
       }
     }
     
-    return Math.min(0.40, boost); // ✅ حد أقصى 40%
+    return Math.min(0.40, boost);
   }
 
   /**
-   * 🎯 عتبة ديناميكية ذكية - محسّنة
+   * 🎯 عتبة ديناميكية ذكية جداً - SUPER SMART
    */
-  _calculateSmartThreshold(results, queryType) {
+  _calculateSmartThreshold(results, queryType, query = '') {
     if (results.length === 0) {
-      return this.thresholds[queryType]?.min || 0.40;
+      return { 
+        threshold: this.thresholds[queryType]?.min || 0.30,
+        level: 'min'
+      };
     }
 
-    const maxSim = results[0].similarity;
     const config = this.thresholds[queryType] || this.thresholds.simple;
+    const maxSim = results[0].similarity;
+    
+    // حساب إحصائيات النتائج
+    const top10 = results.slice(0, Math.min(10, results.length));
+    const avgTop10 = top10.reduce((sum, r) => sum + r.similarity, 0) / top10.length;
+    const gap = top10.length > 1 ? top10[0].similarity - top10[1].similarity : 0;
 
-    // === حالة 1: تطابق ممتاز (75%+) ===
-    if (maxSim >= 0.75) {
-      return Math.max(config.ideal, maxSim * 0.70); // ✅ رفع من 0.65
+    // 🔥 استراتيجية ذكية متعددة المستويات
+
+    // === المستوى 1: تطابق ممتاز (70%+) ===
+    if (maxSim >= config.excellent) {
+      return {
+        threshold: Math.max(config.good, maxSim * 0.75),
+        level: 'excellent',
+        confidence: 'very_high'
+      };
     }
 
-    // === حالة 2: تطابق جيد جداً (60-75%) ===
+    // === المستوى 2: تطابق جيد جداً (60-70%) ===
     if (maxSim >= 0.60) {
-      return Math.max(config.ideal * 0.95, maxSim * 0.65);
+      // إذا كان الفرق كبير، نكون أكثر صرامة
+      const factor = gap > 0.15 ? 0.70 : 0.65;
+      return {
+        threshold: Math.max(config.fair, maxSim * factor),
+        level: 'very_good',
+        confidence: 'high'
+      };
     }
 
-    // === حالة 3: تطابق جيد (50-60%) ===
+    // === المستوى 3: تطابق جيد (50-60%) ===
     if (maxSim >= 0.50) {
-      return Math.max(config.min, maxSim * 0.62); // ✅ رفع من 0.60
+      // إذا كان المتوسط قريب من الأعلى، نقبل أكثر
+      const avgRatio = avgTop10 / maxSim;
+      const factor = avgRatio > 0.85 ? 0.60 : 0.65;
+      
+      return {
+        threshold: Math.max(config.fair * 0.95, maxSim * factor),
+        level: 'good',
+        confidence: 'medium_high'
+      };
     }
 
-    // === حالة 4: تطابق متوسط (40-50%) ===
+    // === المستوى 4: تطابق مقبول (40-50%) ===
     if (maxSim >= 0.40) {
-      const top5 = results.slice(0, 5).map(r => r.similarity);
-      const avg = top5.reduce((a, b) => a + b, 0) / top5.length;
-      return Math.max(config.min * 0.90, avg * 0.58); // ✅ رفع من 0.55
+      // تحليل التوزيع
+      const isWideSpread = (maxSim - top10[top10.length - 1].similarity) > 0.20;
+      
+      if (isWideSpread) {
+        // تطابق متنوع - نكون أكثر انتقائية
+        return {
+          threshold: Math.max(config.fair * 0.90, maxSim * 0.62),
+          level: 'fair',
+          confidence: 'medium'
+        };
+      } else {
+        // تطابق متجانس - نقبل أكثر
+        return {
+          threshold: Math.max(config.min * 1.2, avgTop10 * 0.70),
+          level: 'fair_clustered',
+          confidence: 'medium'
+        };
+      }
     }
 
-    // === حالة 5: تطابق ضعيف (<40%) ===
-    if (queryType === 'statistical') {
-      return Math.max(0.25, maxSim * 0.55); // ✅ رفع من 0.18
+    // === المستوى 5: تطابق ضعيف (30-40%) ===
+    if (maxSim >= 0.30) {
+      // للأسئلة الإحصائية نكون أكثر تساهلاً
+      if (queryType === 'statistical') {
+        return {
+          threshold: Math.max(config.min, maxSim * 0.55),
+          level: 'weak_statistical',
+          confidence: 'low'
+        };
+      }
+      
+      // إذا كان هناك تطابق نصي قوي
+      const hasTextMatch = this._checkStrongTextMatch(query, results[0]);
+      if (hasTextMatch) {
+        return {
+          threshold: Math.max(config.min, maxSim * 0.60),
+          level: 'weak_text_boost',
+          confidence: 'low_medium'
+        };
+      }
+      
+      return {
+        threshold: Math.max(config.min * 1.1, maxSim * 0.58),
+        level: 'weak',
+        confidence: 'low'
+      };
     }
 
-    return Math.max(config.min * 0.92, maxSim * 0.60); // ✅ رفع العتبة
+    // === المستوى 6: تطابق ضعيف جداً (<30%) ===
+    if (queryType === 'statistical' && results.length >= 5) {
+      // للإحصائيات: إذا كان هناك عدد كافٍ من النتائج
+      return {
+        threshold: Math.max(config.min * 0.85, maxSim * 0.50),
+        level: 'very_weak_statistical',
+        confidence: 'very_low'
+      };
+    }
+
+    // === الحد الأدنى المطلق ===
+    return {
+      threshold: Math.max(config.min * 0.90, maxSim * 0.55),
+      level: 'minimal',
+      confidence: 'very_low'
+    };
+  }
+
+  /**
+   * ✅ فحص تطابق نصي قوي
+   */
+  _checkStrongTextMatch(query, result) {
+    if (!result) return false;
+    
+    const recordText = this._extractRecordText(result).toLowerCase();
+    const queryWords = query.split(/\s+/).filter(w => w.length > 3);
+    
+    if (queryWords.length === 0) return false;
+    
+    let matches = 0;
+    queryWords.forEach(word => {
+      if (recordText.includes(word.toLowerCase())) {
+        matches++;
+      }
+    });
+    
+    // إذا كان 60%+ من الكلمات موجودة
+    return (matches / queryWords.length) >= 0.60;
   }
 
   cosineSimilarity(vecA, vecB) {
@@ -388,7 +500,7 @@ class VectorEngineV7 {
   }
 
   /**
-   * ⚡ بحث متوازي - محسّن
+   * ⚡ بحث متوازي
    */
   async parallelSearch(query, config = {}) {
     const settings = {
