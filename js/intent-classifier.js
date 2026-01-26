@@ -137,6 +137,13 @@ class IntentClassifier {
         .map(([intent, _]) => intent);
     }
 
+    // 🔥 تسجيل التطابقات الدلالية للتشخيص
+    console.log('📊 التطابق الدلالي مع القواعد:', {
+      industrial: (classification.semanticScores.industrial * 100).toFixed(1) + '%',
+      activity: (classification.semanticScores.activity * 100).toFixed(1) + '%',
+      decision104: (classification.semanticScores.decision104 * 100).toFixed(1) + '%'
+    });
+
     // 5. تحديد نوع السؤال
     classification.queryType = this._detectQueryType(normalized, classification.entities);
 
