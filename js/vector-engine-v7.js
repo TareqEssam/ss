@@ -1,8 +1,8 @@
 /**
- * 🚀 محرك المتجهات v7 - مع نموذج حقيقي
- * Vector Engine v7 - Real Model Integration
+ * 🚀 محرك المتجهات v7 - محسّن للأداء
+ * Vector Engine v7 - Performance Optimized
  * 
- * @version 7.0.0 - Production Ready
+ * @version 7.1.0 - HIGH PERFORMANCE
  */
 
 class VectorEngineV7 {
@@ -25,18 +25,19 @@ class VectorEngineV7 {
       totalSearches: 0,
       realModelSearches: 0,
       fallbackSearches: 0,
+      cacheHits: 0,
       averageSearchTime: 0
     };
 
     this.embeddingCache = new Map();
-    this.maxCacheSize = 500;
+    this.maxCacheSize = 1000; // ✅ زيادة حجم الذاكرة
 
-    // 🔥 عتبات ديناميكية محسّنة
+    // 🔥 عتبات ديناميكية محسّنة - أعلى للجودة
     this.thresholds = {
-      simple: { min: 0.35, ideal: 0.55 },
-      complex: { min: 0.28, ideal: 0.45 },
-      statistical: { min: 0.20, ideal: 0.35 },
-      comparative: { min: 0.30, ideal: 0.50 }
+      simple: { min: 0.45, ideal: 0.65 },      // ✅ رفع من 0.35
+      complex: { min: 0.38, ideal: 0.55 },     // ✅ رفع من 0.28
+      statistical: { min: 0.30, ideal: 0.45 }, // ✅ رفع من 0.20
+      comparative: { min: 0.40, ideal: 0.60 }  // ✅ رفع من 0.30
     };
   }
 
@@ -97,13 +98,15 @@ class VectorEngineV7 {
   }
 
   /**
-   * 🔢 توليد متجه - نموذج حقيقي أو Fallback
+   * 🔢 توليد متجه - مع Cache ذكي
    */
   async generateEmbedding(text) {
     const normalized = this.normalizer.normalize(text);
     const cacheKey = `emb_${normalized}`;
     
+    // ✅ التحقق من الذاكرة أولاً
     if (this.embeddingCache.has(cacheKey)) {
+      this.stats.cacheHits++;
       return this.embeddingCache.get(cacheKey);
     }
 
@@ -171,7 +174,7 @@ class VectorEngineV7 {
   }
 
   /**
-   * 🔍 البحث الدلالي المحسّن
+   * 🔍 البحث الدلالي المحسّن - HIGH PERFORMANCE
    */
   async semanticSearch(query, databaseName, topK = 5, config = {}) {
     const startTime = performance.now();
@@ -183,19 +186,22 @@ class VectorEngineV7 {
     }
 
     const normalizedQuery = this.normalizer.normalize(query);
+    
+    // ✅ توليد متجه الاستعلام مرة واحدة فقط
     const queryVector = await this.generateEmbedding(normalizedQuery);
 
-    // 🔥 البحث في جميع السجلات
+    // 🔥 البحث في جميع السجلات - بدون توليد متجهات جديدة!
     const results = [];
 
     for (const record of db.data) {
-      const similarity = await this._calculateBestSimilarity(
+      // ✅ استخدام المتجهات المحفوظة فقط
+      const similarity = this._calculateSimilarityFromPrecomputed(
         queryVector,
         record,
         normalizedQuery
       );
 
-      if (similarity > 0.15) { // عتبة أولية منخفضة
+      if (similarity > 0.20) { // عتبة أولية منخفضة
         results.push({
           ...record,
           similarity,
@@ -229,46 +235,42 @@ class VectorEngineV7 {
   }
 
   /**
-   * 🎯 حساب أفضل تشابه من المتجهات المحفوظة
+   * 🎯 حساب التشابه من المتجهات المحفوظة فقط - NO GENERATION!
    */
-  async _calculateBestSimilarity(queryVector, record, normalizedQuery) {
+  _calculateSimilarityFromPrecomputed(queryVector, record, normalizedQuery) {
     let bestScore = 0;
 
-    // === 1. المتجهات المحفوظة (الأولوية) ===
+    // ✅ استخدام المتجهات المحفوظة فقط
     if (record.embeddings?.multilingual_minilm?.embeddings) {
       const embeddings = record.embeddings.multilingual_minilm.embeddings;
       
-      const variations = ['full', 'contextual', 'summary', 'key_phrases'];
+      // تجربة جميع الأنواع المتاحة
+      const variations = ['full', 'contextual', 'summary', 'key_phrases', 'no_stopwords'];
       const scores = [];
       
       for (const variant of variations) {
-        if (embeddings[variant]) {
+        if (embeddings[variant] && Array.isArray(embeddings[variant])) {
           const sim = this.cosineSimilarity(queryVector, embeddings[variant]);
-          scores.push(sim);
+          if (sim > 0) {
+            scores.push(sim);
+          }
         }
       }
       
       if (scores.length > 0) {
-        // أعلى تشابه + متوسط أفضل 2
+        // ✅ استراتيجية ذكية: أعلى تشابه + متوسط أفضل 2
         scores.sort((a, b) => b - a);
+        const topScore = scores[0];
         const top2Avg = scores.slice(0, 2).reduce((a, b) => a + b, 0) / Math.min(2, scores.length);
-        bestScore = Math.max(scores[0], top2Avg * 0.95);
+        bestScore = Math.max(topScore, top2Avg * 0.95);
       }
     }
 
-    // === 2. توليد مباشر (احتياطي) ===
-    if (bestScore < 0.25) {
-      const recordText = this._extractRecordText(record);
-      if (recordText) {
-        const recordVector = await this.generateEmbedding(recordText);
-        const directSim = this.cosineSimilarity(queryVector, recordVector);
-        bestScore = Math.max(bestScore, directSim);
-      }
-    }
-
-    // === 3. تعزيز بسيط من النص ===
+    // ✅ تعزيز نصي بسيط (بدون توليد متجهات)
     const textBoost = this._calculateTextBoost(normalizedQuery, record);
-    return Math.max(bestScore, bestScore * 0.85 + textBoost * 0.15);
+    
+    // ✅ دمج ذكي
+    return Math.min(1.0, bestScore * 0.85 + textBoost * 0.15);
   }
 
   /**
@@ -284,63 +286,88 @@ class VectorEngineV7 {
   }
 
   /**
-   * 🔥 تعزيز نصي بسيط
+   * 🔥 تعزيز نصي بسيط - بدون توليد متجهات
    */
   _calculateTextBoost(query, record) {
     const recordText = this._extractRecordText(record).toLowerCase();
     const queryWords = query.split(/\s+/).filter(w => w.length > 2);
     
+    if (queryWords.length === 0) return 0;
+    
     let boost = 0;
     let matches = 0;
+    let exactMatches = 0;
     
     queryWords.forEach(word => {
-      if (recordText.includes(word)) {
+      const wordLower = word.toLowerCase();
+      
+      // تطابق تام
+      if (recordText.includes(wordLower)) {
         matches++;
-        boost += 0.15;
+        boost += 0.20; // ✅ تعزيز أعلى
+        
+        // تطابق ككلمة كاملة (أفضل)
+        const regex = new RegExp(`\\b${wordLower}\\b`, 'i');
+        if (regex.test(recordText)) {
+          exactMatches++;
+          boost += 0.10; // تعزيز إضافي
+        }
       }
     });
     
+    // تعزيز إضافي لنسبة التطابق
     if (matches > 0) {
-      boost += (matches / queryWords.length) * 0.1;
+      const matchRatio = matches / queryWords.length;
+      boost += matchRatio * 0.15;
+      
+      // مكافأة للتطابقات التامة
+      if (exactMatches > 0) {
+        boost += (exactMatches / queryWords.length) * 0.10;
+      }
     }
     
-    return Math.min(0.25, boost);
+    return Math.min(0.40, boost); // ✅ حد أقصى 40%
   }
 
   /**
-   * 🎯 عتبة ديناميكية ذكية
+   * 🎯 عتبة ديناميكية ذكية - محسّنة
    */
   _calculateSmartThreshold(results, queryType) {
     if (results.length === 0) {
-      return this.thresholds[queryType]?.min || 0.30;
+      return this.thresholds[queryType]?.min || 0.40;
     }
 
     const maxSim = results[0].similarity;
     const config = this.thresholds[queryType] || this.thresholds.simple;
 
-    // === حالة 1: تطابق ممتاز ===
+    // === حالة 1: تطابق ممتاز (75%+) ===
     if (maxSim >= 0.75) {
-      return Math.max(config.ideal, maxSim * 0.65);
+      return Math.max(config.ideal, maxSim * 0.70); // ✅ رفع من 0.65
     }
 
-    // === حالة 2: تطابق جيد ===
+    // === حالة 2: تطابق جيد جداً (60-75%) ===
+    if (maxSim >= 0.60) {
+      return Math.max(config.ideal * 0.95, maxSim * 0.65);
+    }
+
+    // === حالة 3: تطابق جيد (50-60%) ===
     if (maxSim >= 0.50) {
-      return Math.max(config.min, maxSim * 0.60);
+      return Math.max(config.min, maxSim * 0.62); // ✅ رفع من 0.60
     }
 
-    // === حالة 3: تطابق متوسط ===
-    if (maxSim >= 0.35) {
+    // === حالة 4: تطابق متوسط (40-50%) ===
+    if (maxSim >= 0.40) {
       const top5 = results.slice(0, 5).map(r => r.similarity);
       const avg = top5.reduce((a, b) => a + b, 0) / top5.length;
-      return Math.max(config.min * 0.85, avg * 0.55);
+      return Math.max(config.min * 0.90, avg * 0.58); // ✅ رفع من 0.55
     }
 
-    // === حالة 4: تطابق ضعيف ===
+    // === حالة 5: تطابق ضعيف (<40%) ===
     if (queryType === 'statistical') {
-      return Math.max(0.18, maxSim * 0.50);
+      return Math.max(0.25, maxSim * 0.55); // ✅ رفع من 0.18
     }
 
-    return Math.max(config.min * 0.90, maxSim * 0.55);
+    return Math.max(config.min * 0.92, maxSim * 0.60); // ✅ رفع العتبة
   }
 
   cosineSimilarity(vecA, vecB) {
@@ -361,7 +388,7 @@ class VectorEngineV7 {
   }
 
   /**
-   * ⚡ بحث متوازي
+   * ⚡ بحث متوازي - محسّن
    */
   async parallelSearch(query, config = {}) {
     const settings = {
@@ -383,9 +410,11 @@ class VectorEngineV7 {
       resultMap[db] = allResults[idx] || [];
     });
 
+    const totalResults = allResults.reduce((sum, arr) => sum + arr.length, 0);
+
     return {
       ...resultMap,
-      totalResults: allResults.reduce((sum, arr) => sum + arr.length, 0),
+      totalResults,
       query
     };
   }
@@ -424,6 +453,9 @@ class VectorEngineV7 {
       ...this.stats,
       modelStatus: this.useRealModel ? 'نموذج حقيقي' : 'Fallback',
       cacheSize: this.embeddingCache.size,
+      cacheHitRate: this.stats.cacheHits > 0 
+        ? `${((this.stats.cacheHits / (this.stats.cacheHits + this.stats.realModelSearches + this.stats.fallbackSearches)) * 100).toFixed(1)}%`
+        : '0%',
       databases: {
         activity: this.databases.activity?.data?.length || 0,
         decision104: this.databases.decision104?.data?.length || 0,
@@ -441,4 +473,3 @@ class VectorEngineV7 {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = VectorEngineV7;
 }
-
