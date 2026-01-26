@@ -1,9 +1,9 @@
 /**
- * 🚀 محرك المتجهات المتقدم - البحث الذكي الحقيقي
- * Advanced Vector Engine - Real Smart Search
+ * 🚀 محرك المتجهات المتقدم - الذكاء الدلالي المتكامل
+ * Advanced Vector Engine - Integrated Semantic Intelligence
  * 
  * @author AI Expert System
- * @version 8.0.0 - Intelligent Semantic Matching
+ * @version 7.0.0 - Professional Semantic Search
  */
 
 class VectorEngine {
@@ -17,518 +17,871 @@ class VectorEngine {
       industrial: null
     };
 
+    // 🔥 إحصائيات متقدمة
     this.stats = {
       totalSearches: 0,
       successfulSearches: 0,
+      failedSearches: 0,
       averageSearchTime: 0,
-      highQualityMatches: 0
+      cacheHits: 0,
+      cacheMisses: 0,
+      highConfidenceMatches: 0,
+      semanticClusters: 0
     };
 
-    // 🔥 إعدادات بحث عدوانية
+    this.embeddingCache = new Map();
+    this.maxCacheSize = 3000;
+    
+    this.semanticCache = new Map(); // تخزين مؤقت للاستعلامات المعالجة
+
+    // 🔥 إعدادات احترافية للبحث الدلالي
     this.defaultConfig = {
-      // المرحلة 1: جمع واسع
-      initialCandidateLimit: 200,      // جمع 200 مرشح
-      candidateSimilarityThreshold: 0.05, // عتبة منخفضة جداً
+      // المرحلة الأولى: جمع المرشحين
+      candidateTopK: 100,           // جمع مرشحين كثر
+      initialTopK: 50,              // نتائج أولية للتصفية
+      finalTopK: 5,                 // النتائج النهائية المعروضة
       
-      // المرحلة 2: تحسين النتائج
-      refineTopK: 30,                  // أفضل 30 مرشح للتحسين
-      minDisplaySimilarity: 0.12,      // الحد الأدنى للعرض
+      // العتبات الذكية
+      minSimilarity: 0.08,          // عتبة دنيا جداً
+      semanticThreshold: 0.25,      // عتبة للنتائج الدلالية الجيدة
+      highConfidenceThreshold: 0.45,// عتبة للثقة العالية
       
-      // الأوزان (تركيز كامل على الدلالة)
-      semanticWeight: 0.95,            // تركيز عالي على الدلالة
-      metadataBoost: 0.30,             // تعزيز بالميتاداتا
-      textMatchBoost: 0.40,            // تعزيز بالمطابقة النصية
+      // الأوزان المتقدمة
+      semanticWeight: 0.92,         // وزن كبير للمتجهات الدلالية
+      contextualWeight: 0.85,       // وزن السياق
+      keywordWeight: 0.08,          // وزن صغير للكلمات (تأكيد فقط)
+      metadataWeight: 0.10,         // وزن الميتاداتا
       
       // الميزات المتقدمة
-      enableTextExpansion: true,       // توسيع النص تلقائياً
-      enableQueryReformulation: true,  // إعادة صياغة الاستعلام
-      enableHybridMatching: true,      // مطابقة هجينة
-      aggressiveFallback: true,        // استراتيجيات عدوانية للعثور على نتائج
-      forceFindResults: true           // إجبار العثور على نتائج
+      dynamicThreshold: true,
+      adaptiveScoring: true,
+      semanticClustering: true,     // تجميع النتائج دلالياً
+      queryDecomposition: true,     // تحليل الاستعلام إلى أجزاء
+      multiStageSearch: true,       // بحث متعدد المراحل
+      fallbackStrategies: true,     // استراتيجيات احتياطية
+      
+      // توسيع البحث
+      semanticExpansion: true,      // توسيع دلالي
+      synonymExpansion: true,       // توسيع بالمرادفات
+      contextAwareSearch: true,     // بحث واعي بالسياق
+      crossDatabaseBoost: true      // تعزيز البحث عبر القواعد
     };
 
-    // 🔥 قاموس توسيع الاستعلامات
-    this.queryExpansionDict = {
-      // توسيع "فندق"
-      'فندق': [
-        'منشأة فندقية', 'مؤسسة فندقية', 'مكان إقامة', 'سكن فندقي',
-        'نزل', 'منتجع', 'فندق سياحي', 'فندق تجاري', 'فندق نجوم'
+    // 🔥 مفاهيم دلالية أساسية للبحث
+    this.semanticConcepts = {
+      activities: [
+        'فندق', 'مصنع', 'مطعم', 'مقهى', 'محل', 'شركة', 'مكتب',
+        'مستودع', 'مخزن', 'صالون', 'معرض', 'عيادة', 'مستشفى',
+        'مدرسة', 'حضانة', 'روضة', 'ورشة', 'معمل', 'منتجع', 'قرية سياحية'
       ],
-      
-      // توسيع "مصنع"
-      'مصنع': [
-        'منشأة صناعية', 'معمل', 'مصنعة', 'ورشة صناعية',
-        'مصنع إنتاج', 'مصنع تصنيع', 'منشأة تصنيع'
+      industries: [
+        'منطقة صناعية', 'مدينة صناعية', 'حيز صناعي', 'موقع صناعي',
+        'منطقة تجارية', 'منطقة سكنية', 'منطقة سياحية'
       ],
-      
-      // توسيع "مطعم"
-      'مطعم': [
-        'محل طعام', 'مأكولات', 'مطعمي', 'كافيتيريا',
-        'مطعم وجبات سريعة', 'مطعم عائلي', 'مطعم راقي'
+      procedures: [
+        'ترخيص', 'رخصة', 'تصريح', 'إذن', 'موافقة',
+        'اشتراطات', 'متطلبات', 'شروط', 'مواصفات',
+        'إجراءات', 'خطوات', 'عملية'
       ],
-      
-      // توسيع "نشاط"
-      'نشاط': [
-        'عمل', 'مشروع', 'مهنة', 'صنعة',
-        'عملية', 'مهمة', 'وظيفة', 'ممارسة'
-      ],
-      
-      // توسيع "إنشاء"
-      'انشاء': ['تأسيس', 'إنشاء', 'بناء', 'تشييد', 'تكوين'],
-      'تشغيل': ['تشغيل', 'إدارة', 'تشغيل وإدارة', 'إدارة وتشغيل'],
-      
-      // توسيع "ترخيص"
-      'ترخيص': ['رخصة', 'تصريح', 'إذن', 'موافقة', 'ترخيص رسمي']
+      incentives: [
+        'حوافز', 'إعفاء', 'تخفيض', 'مزايا', 'تسهيلات',
+        'قرار 104', 'قطاع أ', 'قطاع ب', 'دعم'
+      ]
     };
 
-    // 🔥 ذاكرة النتائج الناجحة
-    this.successfulPatterns = new Map();
+    // 🔥 ذاكرة السياق المتقدمة
+    this.contextMemory = {
+      lastQueries: [],
+      lastResults: {},
+      conversationFlow: [],
+      entityHistory: [],
+      sessionStart: Date.now(),
+      queryPatterns: new Map()
+    };
+    
+    // 🔥 استراتيجيات البحث الاحتياطية
+    this.fallbackStrategies = [
+      'broadSemanticSearch',
+      'keywordFallback',
+      'conceptClustering',
+      'metadataSearch',
+      'partialMatchExpansion'
+    ];
   }
 
   /**
-   * 📦 تحميل قواعد البيانات
+   * 🚀 تهيئة المحرك الاحترافية
+   */
+  async initialize(vectorDatabases) {
+    console.log('🚀 تهيئة محرك المتجهات المتقدم...');
+    
+    try {
+      await this.loadDatabases(vectorDatabases);
+      await this.buildSemanticStructures();
+      await this.warmupCache();
+      
+      console.log('✅ اكتمل تحميل المحرك المتقدم:');
+      console.log('   📊 الإحصائيات الأولية:', this.getInitialStats());
+      
+      return true;
+    } catch (error) {
+      console.error('❌ خطأ في تهيئة المحرك:', error);
+      this.enableEmergencyMode();
+      return false;
+    }
+  }
+
+  /**
+   * 📦 تحميل قواعد البيانات المتجهية
    */
   async loadDatabases(vectorDatabases) {
-    console.log('📦 تحميل قواعد البيانات للبحث الذكي...');
+    console.log('📦 تحميل قواعد البيانات المتجهية المتقدمة...');
     
     try {
       this.databases.activity = vectorDatabases.activity;
       this.databases.decision104 = vectorDatabases.decision104;
       this.databases.industrial = vectorDatabases.industrial;
 
-      // التحضير السريع للبحث
-      this.prepareDatabases();
+      // التحقق من جودة البيانات
+      this.validateDatabases();
 
-      console.log('✅ جاهز للبحث الذكي:');
-      console.log(`   🏢 الأنشطة: ${this.databases.activity?.data?.length || 0} سجل`);
-      console.log(`   💰 القرار 104: ${this.databases.decision104?.data?.length || 0} سجل`);
-      console.log(`   🗺️ المناطق: ${this.databases.industrial?.data?.length || 0} سجل`);
+      // بناء الفهارس المتقدمة
+      await this.buildAdvancedIndexes();
+
+      console.log('✅ اكتمل تحميل القواعد:');
+      console.log(`   📁 الأنشطة: ${this.databases.activity?.data?.length || 0} سجل`);
+      console.log(`   📁 القرار 104: ${this.databases.decision104?.data?.length || 0} سجل`);
+      console.log(`   📁 المناطق: ${this.databases.industrial?.data?.length || 0} سجل`);
 
       return true;
     } catch (error) {
       console.error('❌ خطأ في تحميل القواعد:', error);
-      return false;
+      throw error;
     }
   }
 
   /**
-   * ⚡ تحضير قواعد البيانات للبحث السريع
+   * 🔍 التحقق من جودة البيانات
    */
-  prepareDatabases() {
+  validateDatabases() {
+    for (const [dbName, db] of Object.entries(this.databases)) {
+      if (!db || !db.data) {
+        throw new Error(`قاعدة ${dbName} غير موجودة أو فارغة`);
+      }
+
+      // التحقق من وجود التضمينات
+      let validRecords = 0;
+      db.data.forEach(record => {
+        if (record.embeddings?.multilingual_minilm?.embeddings) {
+          validRecords++;
+        }
+      });
+
+      if (validRecords === 0) {
+        console.warn(`⚠️ قاعدة ${dbName} لا تحتوي على تضمينات متجهية`);
+      }
+
+      console.log(`   ✓ ${dbName}: ${validRecords}/${db.data.length} سجل به تضمينات`);
+    }
+  }
+
+  /**
+   * 🏗️ بناء فهارس متقدمة
+   */
+  async buildAdvancedIndexes() {
+    console.log('🏗️ بناء الفهارس الدلالية المتقدمة...');
+    
     for (const [dbName, db] of Object.entries(this.databases)) {
       if (!db || !db.data) continue;
 
-      // إنشاء فهرس نصي سريع
-      db.quickTextIndex = db.data.map((record, idx) => {
-        const data = record.original_data || {};
-        return {
-          id: idx,
-          text: (data.text || '').toLowerCase(),
-          name: (data.name || '').toLowerCase(),
-          preview: (data.text_preview || '').toLowerCase(),
-          keywords: (data.keywords || []).join(' ').toLowerCase(),
-          synonyms: (data.synonyms || []).join(' ').toLowerCase()
-        };
+      // 🔥 الفهارس الأساسية
+      db.semanticIndex = new Map();
+      db.conceptIndex = new Map();
+      db.metadataIndex = new Map();
+      db.clusterIndex = new Map();
+      
+      // 🔥 فهارس متقدمة
+      db.semanticClusters = new Map();
+      db.embeddingVectors = [];
+      db.textCache = [];
+
+      // معالجة كل سجل
+      db.data.forEach((record, idx) => {
+        // استخلاص النصوص والمفاهيم
+        const semanticData = this.extractSemanticData(record);
+        
+        // فهرسة دلالية عميقة
+        this.indexSemanticConcepts(semanticData.concepts, idx, db.semanticIndex);
+        this.indexMetadata(record.original_data, idx, db.metadataIndex);
+        
+        // تخزين المتجهات للتجميع السريع
+        if (record.embeddings?.multilingual_minilm?.embeddings?.full) {
+          db.embeddingVectors[idx] = record.embeddings.multilingual_minilm.embeddings.full;
+        }
+        
+        // تخزين النص للبحث النصي السريع
+        db.textCache[idx] = semanticData.fullText;
+        
+        // تجميع دلالي
+        if (semanticData.primaryConcept) {
+          this.addToCluster(semanticData.primaryConcept, idx, db.clusterIndex);
+        }
       });
 
-      // تجهيز المتجهات للوصول السريع
-      db.embeddingCache = db.data.map(record => 
-        record.embeddings?.multilingual_minilm?.embeddings?.full || null
-      );
+      // 🔥 بناء تجمعات دلالية
+      if (this.defaultConfig.semanticClustering) {
+        this.buildSemanticClusters(db);
+      }
 
-      console.log(`   ⚡ ${dbName}: جاهز للبحث السريع`);
+      console.log(`   📊 ${dbName}:`, {
+        مفاهيم: db.semanticIndex.size,
+        تجمعات: db.clusterIndex.size,
+        سجلات: db.data.length
+      });
     }
   }
 
   /**
-   * 🔥 البحث الدلالي الرئيسي
+   * 🔥 استخلاص البيانات الدلالية
    */
-  async semanticSearch(query, databaseName, config = {}) {
-    const startTime = performance.now();
-    const searchId = Math.random().toString(36).substr(2, 8);
+  extractSemanticData(record) {
+    const data = record.original_data || {};
+    const result = {
+      concepts: new Set(),
+      keywords: new Set(),
+      entities: new Set(),
+      fullText: '',
+      primaryConcept: null
+    };
+
+    // جمع كل النصوص
+    const allTexts = [
+      data.text || '',
+      data.name || '',
+      data.text_preview || '',
+      data.value || '',
+      ...(data.keywords || []),
+      ...(data.synonyms || []),
+      ...(data.intent || []),
+      data.governorate || '',
+      data.dependency || '',
+      data.decision || ''
+    ].filter(Boolean);
+
+    result.fullText = allTexts.join(' ').toLowerCase();
+    const normalizedText = this.normalizer.normalize(result.fullText);
     
-    console.log(`🔍 [${searchId}] بحث ذكي: "${query}" في ${databaseName}`);
+    // استخلاص المفاهيم
+    const words = normalizedText.split(/\s+/).filter(w => w.length > 2);
     
-    const settings = { ...this.defaultConfig, ...config };
-    const db = this.databases[databaseName];
+    // مفاهيم فردية
+    words.forEach(word => result.concepts.add(word));
     
-    if (!db || !db.data || db.data.length === 0) {
-      return [];
+    // مفاهيم مركبة (2-3 كلمات)
+    for (let i = 0; i < words.length - 1; i++) {
+      const bigram = words[i] + ' ' + words[i + 1];
+      result.concepts.add(bigram);
+      
+      if (i < words.length - 2) {
+        const trigram = words[i] + ' ' + words[i + 1] + ' ' + words[i + 2];
+        result.concepts.add(trigram);
+      }
+    }
+    
+    // تحديد المفهوم الأساسي (الأكثر تكراراً)
+    if (words.length > 0) {
+      const wordFreq = {};
+      words.forEach(word => {
+        wordFreq[word] = (wordFreq[word] || 0) + 1;
+      });
+      
+      const sortedWords = Object.entries(wordFreq).sort((a, b) => b[1] - a[1]);
+      if (sortedWords.length > 0 && sortedWords[0][1] > 1) {
+        result.primaryConcept = sortedWords[0][0];
+      }
     }
 
-    try {
-      // 🔥 المرحلة 0: معالجة الاستعلام وتحسينه
-      const processedQuery = this.enhanceQuery(query, databaseName);
-      console.log(`   📝 الاستعلام المعالج: "${processedQuery.enhanced}"`);
-      
-      // 🔥 المرحلة 1: البحث الواسع (جمع أكبر عدد من المرشحين)
-      const candidates = await this.broadSearchPhase(processedQuery, db, settings);
-      
-      if (candidates.length === 0) {
-        console.log(`   ⚠️ لم يتم العثور على مرشحين، جلب عينات عشوائية`);
-        return this.getRandomSamples(db, 3);
+    return result;
+  }
+
+  /**
+   * 🔥 فهرسة المفاهيم الدلالية
+   */
+  indexSemanticConcepts(concepts, recordIdx, indexMap) {
+    concepts.forEach(concept => {
+      if (!indexMap.has(concept)) {
+        indexMap.set(concept, []);
       }
-      
-      console.log(`   📊 وجد ${candidates.length} مرشحاً`);
-      
-      // 🔥 المرحلة 2: تحسين وتقييم المرشحين
-      const evaluatedResults = await this.evaluateCandidates(processedQuery, candidates, db, settings);
-      
-      // 🔥 المرحلة 3: تصفية وترتيب النتائج
-      const finalResults = this.filterAndRankResults(evaluatedResults, settings);
-      
-      const searchTime = performance.now() - startTime;
-      this.updateStats(searchTime, finalResults.length);
-      
-      console.log(`✅ [${searchId}] اكتمل: ${finalResults.length} نتيجة (${searchTime.toFixed(1)}ms)`);
-      if (finalResults.length > 0) {
-        console.log(`   🏆 أفضل نتيجة: ${(finalResults[0].similarity * 100).toFixed(1)}%`);
+      if (!indexMap.get(concept).includes(recordIdx)) {
+        indexMap.get(concept).push(recordIdx);
       }
-      
-      // 🔥 المرحلة 4: إذا لم توجد نتائج جيدة، البحث النصي الاحتياطي
-      if (finalResults.length === 0 || finalResults[0].similarity < 0.15) {
-        console.log(`   🔄 تنشيط البحث النصي الاحتياطي`);
-        const textResults = this.textBasedFallback(query, db);
-        if (textResults.length > 0) {
-          console.log(`   📄 وجد ${textResults.length} نتيجة نصية`);
-          return textResults;
+    });
+  }
+
+  /**
+   * 🔥 فهرسة الميتاداتا
+   */
+  indexMetadata(metadata, recordIdx, indexMap) {
+    if (!metadata) return;
+    
+    const metaFields = [
+      'governorate',
+      'dependency',
+      'decision',
+      'value',
+      'name'
+    ];
+    
+    metaFields.forEach(field => {
+      if (metadata[field]) {
+        const value = String(metadata[field]).toLowerCase().trim();
+        if (value) {
+          const key = `${field}:${value}`;
+          if (!indexMap.has(key)) {
+            indexMap.set(key, []);
+          }
+          if (!indexMap.get(key).includes(recordIdx)) {
+            indexMap.get(key).push(recordIdx);
+          }
         }
       }
-      
-      return finalResults;
-      
-    } catch (error) {
-      console.error(`❌ [${searchId}] خطأ:`, error);
-      return this.emergencyFallback(query, db);
+    });
+  }
+
+  /**
+   * 🔥 إضافة للتجمع
+   */
+  addToCluster(concept, recordIdx, clusterIndex) {
+    if (!clusterIndex.has(concept)) {
+      clusterIndex.set(concept, []);
+    }
+    clusterIndex.get(concept).push(recordIdx);
+  }
+
+  /**
+   * 🏗️ بناء تجمعات دلالية
+   */
+  buildSemanticClusters(db) {
+    if (!db.embeddingVectors || db.embeddingVectors.length < 10) return;
+    
+    // تجميع بسيط بناءً على المفاهيم الأساسية
+    for (const [concept, indices] of db.clusterIndex.entries()) {
+      if (indices.length >= 3) { // تجمعات تحتوي على 3 سجلات على الأقل
+        db.semanticClusters.set(concept, {
+          indices: indices,
+          size: indices.length,
+          centroid: this.calculateCentroid(db.embeddingVectors, indices)
+        });
+        this.stats.semanticClusters++;
+      }
     }
   }
 
   /**
-   * 🔥 تحسين الاستعلام
+   * 🔥 حساب المركز الهندسي
    */
-  enhanceQuery(query, databaseName) {
-    const normalized = this.normalizer.normalize(query.toLowerCase());
-    const words = normalized.split(/\s+/).filter(w => w.length > 1);
+  calculateCentroid(vectors, indices) {
+    if (indices.length === 0) return null;
     
-    // التوسيع التلقائي
-    let expandedQuery = normalized;
-    if (this.defaultConfig.enableTextExpansion) {
-      expandedQuery = this.expandQueryText(normalized);
+    const dimension = vectors[0]?.length || this.vectorDimension;
+    const centroid = new Array(dimension).fill(0);
+    
+    indices.forEach(idx => {
+      const vector = vectors[idx];
+      if (vector && vector.length === dimension) {
+        for (let i = 0; i < dimension; i++) {
+          centroid[i] += vector[i];
+        }
+      }
+    });
+    
+    const count = indices.length;
+    for (let i = 0; i < dimension; i++) {
+      centroid[i] /= count;
     }
     
-    // إعادة الصياغة الذكية
-    let reformulated = normalized;
-    if (this.defaultConfig.enableQueryReformulation) {
-      reformulated = this.reformulateQuery(normalized, databaseName);
+    return this.normalizeVector(centroid);
+  }
+
+  /**
+   * 🔥 توليد التضمينات المتقدمة
+   */
+  async generateEmbedding(text, metadata = {}, options = {}) {
+    const cacheKey = this.getEmbeddingCacheKey(text, metadata, options);
+    
+    // التحقق من التخزين المؤقت
+    if (this.embeddingCache.has(cacheKey)) {
+      this.stats.cacheHits++;
+      return this.embeddingCache.get(cacheKey);
     }
+
+    this.stats.cacheMisses++;
+    
+    try {
+      // التوليد المتقدم للتضمين
+      const vector = await this.generateAdvancedEmbedding(text, metadata, options);
+      
+      // التطبيع والتخزين
+      const normalizedVector = this.normalizeVector(vector);
+      this.addToEmbeddingCache(cacheKey, normalizedVector);
+      
+      return normalizedVector;
+    } catch (error) {
+      console.warn('⚠️ خطأ في توليد التضمين، استخدام بديل:', error);
+      return this.generateFallbackEmbedding(text);
+    }
+  }
+
+  /**
+   * 🔥 توليد تضمين متقدم
+   */
+  async generateAdvancedEmbedding(text, metadata = {}, options = {}) {
+    const vector = new Array(this.vectorDimension).fill(0);
+    const normalizedText = this.normalizer.normalize(text.toLowerCase());
+    
+    // 🔥 المرحلة 1: تحليل النص إلى مكونات
+    const textAnalysis = this.analyzeText(normalizedText);
+    
+    // 🔥 المرحلة 2: معالجة كل جملة
+    textAnalysis.sentences.forEach((sentence, sentenceIdx) => {
+      const sentenceWeight = 1.0 / (sentenceIdx + 1);
+      this.processSentence(sentence, sentenceWeight, vector);
+    });
+    
+    // 🔥 المرحلة 3: معالجة الميتاداتا
+    if (Object.keys(metadata).length > 0) {
+      this.processMetadata(metadata, vector);
+    }
+    
+    // 🔥 المرحلة 4: توسيع دلالي
+    if (options.expand !== false) {
+      await this.applySemanticExpansion(textAnalysis, vector);
+    }
+    
+    // 🔥 المرحلة 5: تحسين السياق
+    if (options.context !== false && this.contextMemory.lastQueries.length > 0) {
+      this.applyContextualEnhancement(vector);
+    }
+    
+    return vector;
+  }
+
+  /**
+   * 🔥 تحليل النص
+   */
+  analyzeText(text) {
+    const sentences = text.split(/[.,،؛!?]/).filter(s => s.trim().length > 3);
+    const words = text.split(/\s+/).filter(w => w.length > 1);
     
     return {
-      original: query,
-      normalized: normalized,
-      enhanced: expandedQuery,
-      reformulated: reformulated,
+      original: text,
+      sentences: sentences,
       words: words,
-      isActivityQuery: /فندق|مصنع|مطعم|مقهى|ورشة|معمل/.test(normalized),
-      isIndustrialQuery: /منطقة|صناعية|موقع|محافظة/.test(normalized),
-      isDecisionQuery: /قرار|104|حوافز|إعفاء/.test(normalized)
+      wordCount: words.length,
+      sentenceCount: sentences.length,
+      containsNumbers: /\d+/.test(text),
+      containsQuestions: /\?|هل|ما|كيف|متى|أين/.test(text),
+      keyPhrases: this.extractKeyPhrases(text)
     };
   }
 
   /**
-   * 🔥 توسيع نص الاستعلام
+   * 🔥 استخلاص العبارات الرئيسية
    */
-  expandQueryText(query) {
-    let expanded = query;
-    const words = query.split(/\s+/);
+  extractKeyPhrases(text) {
+    const phrases = new Set();
+    const words = text.split(/\s+/).filter(w => w.length > 2);
+    
+    // bigrams
+    for (let i = 0; i < words.length - 1; i++) {
+      phrases.add(words[i] + ' ' + words[i + 1]);
+    }
+    
+    // trigrams
+    for (let i = 0; i < words.length - 2; i++) {
+      phrases.add(words[i] + ' ' + words[i + 1] + ' ' + words[i + 2]);
+    }
+    
+    return Array.from(phrases);
+  }
+
+  /**
+   * 🔥 معالجة الجملة
+   */
+  processSentence(sentence, sentenceWeight, vector) {
+    const words = sentence.toLowerCase().split(/\s+/).filter(w => w.length > 1);
+    
+    words.forEach((word, wordIdx) => {
+      const positionWeight = 1.0 / Math.sqrt(wordIdx + 1);
+      const totalWeight = positionWeight * sentenceWeight * 2.5;
+      
+      const hash = this.stringHash(word);
+      
+      // توزيع متعدد الأبعاد
+      for (let i = 0; i < 15; i++) {
+        const pos = Math.abs(hash * (i + 1) + i * 73) % this.vectorDimension;
+        const value = Math.sin(hash + i * 0.3) * totalWeight;
+        vector[pos] += value;
+      }
+      
+      // هيكل العلاقات بين الكلمات
+      if (wordIdx < words.length - 1) {
+        const nextWord = words[wordIdx + 1];
+        const pairHash = this.stringHash(word + '_' + nextWord);
+        const pairPos = Math.abs(pairHash) % this.vectorDimension;
+        vector[pairPos] += totalWeight * 0.7;
+      }
+    });
+  }
+
+  /**
+   * 🔥 معالجة الميتاداتا
+   */
+  processMetadata(metadata, vector) {
+    const metaTexts = [
+      metadata.text,
+      metadata.name,
+      metadata.text_preview,
+      ...(metadata.keywords || []),
+      ...(metadata.synonyms || []),
+      ...(metadata.intent || []),
+      metadata.governorate,
+      metadata.dependency,
+      metadata.decision
+    ].filter(Boolean).map(t => String(t).toLowerCase());
+    
+    let metaWeight = 0;
+    metaTexts.forEach((text, idx) => {
+      const weight = 1.0 / Math.sqrt(idx + 2);
+      metaWeight += weight;
+      
+      const words = this.normalizer.normalize(text).split(/\s+/);
+      words.forEach(word => {
+        const hash = this.stringHash(word);
+        const pos = Math.abs(hash * 3) % this.vectorDimension;
+        vector[pos] += weight * 0.5;
+      });
+    });
+  }
+
+  /**
+   * 🔥 تطبيق التوسيع الدلالي
+   */
+  async applySemanticExpansion(textAnalysis, vector) {
+    // توسيع بالمرادفات الدلالية
+    const expandedConcepts = this.expandSemanticConcepts(textAnalysis.words);
+    
+    expandedConcepts.forEach(concept => {
+      const hash = this.stringHash(concept);
+      for (let i = 0; i < 5; i++) {
+        const pos = Math.abs(hash * (i + 2) + i * 97) % this.vectorDimension;
+        vector[pos] += 0.1;
+      }
+    });
+  }
+
+  /**
+   * 🔥 توسيع المفاهيم الدلالية
+   */
+  expandSemanticConcepts(words) {
+    const expansions = [];
+    
+    const semanticMap = {
+      'فندق': ['منشأة فندقية', 'إقامة', 'نزل', 'منتجع'],
+      'مصنع': ['معمل', 'منشأة صناعية', 'ورشة كبيرة', 'مصنعة'],
+      'مطعم': ['مأكولات', 'مطعمي', 'محل طعام', 'كافيتيريا'],
+      'ترخيص': ['إذن', 'موافقة', 'تصريح', 'رخصة', 'تفويض'],
+      'منطقة': ['موقع', 'مكان', 'حيز', 'موقع', 'موضع'],
+      'صناعية': ['تصنيع', 'إنتاج', 'صناعي', 'تصنيعي'],
+      'نشاط': ['عمل', 'مشروع', 'مهنة', 'صنعة', 'عملية']
+    };
     
     words.forEach(word => {
-      if (this.queryExpansionDict[word]) {
-        expanded += ' ' + this.queryExpansionDict[word].join(' ');
+      if (semanticMap[word]) {
+        expansions.push(...semanticMap[word]);
       }
     });
     
-    return expanded;
+    return expansions;
   }
 
   /**
-   * 🔥 إعادة صياغة الاستعلام
+   * 🔥 تحسين السياق
    */
-  reformulateQuery(query, databaseName) {
-    let reformulated = query;
-    
-    // إعادة صياغة حسب قاعدة البيانات
-    switch(databaseName) {
-      case 'activity':
-        if (query.includes('فندق') && !query.includes('نشاط')) {
-          reformulated = 'نشاط ' + query;
-        }
-        if (query.includes('إنشاء') || query.includes('تشغيل')) {
-          reformulated += ' متطلبات ترخيص اشتراطات';
-        }
-        break;
-        
-      case 'industrial':
-        if (query.includes('منطقة') && !query.includes('صناعية')) {
-          reformulated = query + ' صناعية';
-        }
-        break;
-        
-      case 'decision104':
-        if (query.includes('فندق') || query.includes('مصنع')) {
-          reformulated = query + ' حوافز قرار 104';
-        }
-        break;
+  applyContextualEnhancement(vector) {
+    const lastQuery = this.contextMemory.lastQueries[this.contextMemory.lastQueries.length - 1];
+    if (lastQuery) {
+      const lastWords = this.normalizer.normalize(lastQuery).split(/\s+/).slice(0, 5);
+      
+      lastWords.forEach(word => {
+        const hash = this.stringHash(word);
+        const pos = Math.abs(hash * 2) % this.vectorDimension;
+        vector[pos] += 0.05; // تأثير خفيف للسياق
+      });
     }
-    
-    return reformulated;
   }
 
   /**
-   * 🔥 مرحلة البحث الواسع
+   * 🔥 البحث الدلالي المتقدم
    */
-  async broadSearchPhase(query, db, settings) {
-    const candidates = [];
+  async semanticSearch(query, databaseName, config = {}) {
+    const startTime = performance.now();
+    const searchId = Date.now() + Math.random().toString(36).substr(2, 9);
     
-    // الاستراتيجية 1: البحث بالمطابقة النصية المباشرة
-    const textMatches = this.findTextMatches(query, db, 50);
-    candidates.push(...textMatches);
+    console.log(`🔍 [${searchId}] بدء البحث في ${databaseName}: "${query.substring(0, 50)}..."`);
     
-    // الاستراتيجية 2: البحث في المتجهات المحفوظة
-    const vectorMatches = await this.findVectorMatches(query, db, 100);
-    candidates.push(...vectorMatches);
+    const settings = { ...this.defaultConfig, ...config };
+    const db = this.databases[databaseName];
     
-    // الاستراتيجية 3: البحث بالمفاهيم
-    const conceptMatches = this.findConceptMatches(query, db, 50);
-    candidates.push(...conceptMatches);
-    
-    // إزالة التكرارات وفرز
-    return this.deduplicateAndSort(candidates, query);
-  }
+    if (!this.validateDatabase(db, databaseName)) {
+      return [];
+    }
 
-  /**
-   * 🔥 البحث بالمطابقة النصية
-   */
-  findTextMatches(query, db, limit = 50) {
-    const matches = [];
-    const queryText = query.normalized;
-    
-    for (let i = 0; i < db.data.length; i++) {
-      if (matches.length >= limit) break;
+    try {
+      // 🔥 المرحلة 0: معالجة الاستعلام
+      const processedQuery = this.preprocessQuery(query, databaseName);
       
-      const record = db.data[i];
-      const textData = db.quickTextIndex[i];
+      // 🔥 المرحلة 1: البحث متعدد المراحل
+      const results = await this.multiStageSearch(processedQuery, db, databaseName, settings);
       
-      if (!textData) continue;
+      // 🔥 المرحلة 2: تصفية وتحسين النتائج
+      const filteredResults = this.filterAndRankResults(results, processedQuery, settings);
       
-      let matchScore = 0;
+      // 🔥 المرحلة 3: تحسين النتائج النهائية
+      const finalResults = this.enhanceFinalResults(filteredResults, db, settings);
       
-      // البحث في الحقول النصية المختلفة
-      const searchFields = [
-        { text: textData.text, weight: 3.0 },
-        { text: textData.name, weight: 4.0 },
-        { text: textData.preview, weight: 2.5 },
-        { text: textData.keywords, weight: 2.0 },
-        { text: textData.synonyms, weight: 1.5 }
-      ];
+      const searchTime = performance.now() - startTime;
+      this.updateSearchStats(databaseName, searchTime, finalResults.length);
       
-      searchFields.forEach(field => {
-        if (field.text && field.text.includes(queryText)) {
-          matchScore += field.weight * 2.0;
-        }
-        
-        // مطابقة كلمات
-        const queryWords = query.words;
-        queryWords.forEach(word => {
-          if (field.text.includes(word)) {
-            matchScore += field.weight;
-          }
-        });
+      console.log(`✅ [${searchId}] اكتمل البحث في ${databaseName}:`, {
+        وقت: `${searchTime.toFixed(1)}ms`,
+        نتائج: finalResults.length,
+        'أفضل نتيجة': finalResults.length > 0 ? `${(finalResults[0].similarity * 100).toFixed(1)}%` : '0%'
       });
       
-      if (matchScore > 0) {
-        matches.push({
-          record: record,
-          index: i,
-          score: matchScore,
-          type: 'text'
-        });
+      // تحديث ذاكرة السياق
+      this.updateContextMemory(query, databaseName, finalResults);
+      
+      return finalResults;
+    } catch (error) {
+      console.error(`❌ [${searchId}] خطأ في البحث:`, error);
+      this.stats.failedSearches++;
+      
+      // استراتيجية احتياطية
+      return await this.fallbackSearch(query, db, databaseName, settings);
+    }
+  }
+
+  /**
+   * 🔥 التحقق من صحة قاعدة البيانات
+   */
+  validateDatabase(db, dbName) {
+    if (!db || !db.data || db.data.length === 0) {
+      console.warn(`⚠️ قاعدة ${dbName} غير محملة أو فارغة`);
+      return false;
+    }
+    
+    if (!db.semanticIndex || !db.textCache) {
+      console.warn(`⚠️ قاعدة ${dbName} غير مفهرسة بشكل صحيح`);
+      return false;
+    }
+    
+    return true;
+  }
+
+  /**
+   * 🔥 معالجة مسبقة للاستعلام
+   */
+  preprocessQuery(query, databaseName) {
+    const normalized = this.normalizer.normalize(query);
+    
+    return {
+      original: query,
+      normalized: normalized,
+      words: normalized.split(/\s+/).filter(w => w.length > 1),
+      sentences: normalized.split(/[.,،؛!?]/).filter(s => s.trim().length > 3),
+      isComplex: this.isComplexQuery(normalized),
+      questionType: this.detectQuestionType(normalized),
+      semanticConcepts: this.extractQueryConcepts(normalized),
+      databaseContext: databaseName,
+      timestamp: Date.now()
+    };
+  }
+
+  /**
+   * 🔥 كشف الأسئلة المعقدة
+   */
+  isComplexQuery(query) {
+    const complexityIndicators = [
+      /\b(و|أو|ثم|لكن|لذا|بالإضافة|كذلك|أيضاً)\b/,
+      /\؟.*\؟/, // أكثر من سؤال
+      /-|–|—/,  // شرطات
+      /\b(كم|كيف|متى|أين|لماذا|هل)\b.*\b(كم|كيف|متى|أين|لماذا|هل)\b/
+    ];
+    
+    return complexityIndicators.some(pattern => pattern.test(query));
+  }
+
+  /**
+   * 🔥 كشف نوع السؤال
+   */
+  detectQuestionType(query) {
+    if (/كم|عدد|كام|مجموع|إحصاء/.test(query)) return 'statistical';
+    if (/أين|اين|مكان|موقع|عنوان/.test(query)) return 'location';
+    if (/كيف|طريقة|إجراء|خطوات/.test(query)) return 'procedural';
+    if (/متى|موعد|تاريخ|زمن/.test(query)) return 'temporal';
+    if (/لماذا|سبب|علة|سببية/.test(query)) return 'causal';
+    if (/هل|أليس|أم|أمّا/.test(query)) return 'boolean';
+    if (/مقارنة|فرق|بين|أفضل|أسوأ/.test(query)) return 'comparative';
+    if (/ماذا|ما هو|ما هي/.test(query)) return 'definition';
+    return 'general';
+  }
+
+  /**
+   * 🔥 استخلاص مفاهيم الاستعلام
+   */
+  extractQueryConcepts(query) {
+    const concepts = new Set();
+    const words = query.split(/\s+/).filter(w => w.length > 2);
+    
+    // كلمات مفردة
+    words.forEach(word => concepts.add(word));
+    
+    // عبارات (2-3 كلمات)
+    for (let i = 0; i < words.length - 1; i++) {
+      concepts.add(words[i] + ' ' + words[i + 1]);
+      if (i < words.length - 2) {
+        concepts.add(words[i] + ' ' + words[i + 1] + ' ' + words[i + 2]);
       }
     }
     
-    return matches.sort((a, b) => b.score - a.score).slice(0, limit);
+    return Array.from(concepts);
   }
 
   /**
-   * 🔥 البحث في المتجهات
+   * 🔥 البحث متعدد المراحل
    */
-  async findVectorMatches(query, db, limit = 100) {
-    const matches = [];
-    const queryEmbedding = await this.generateSmartEmbedding(query.enhanced);
+  async multiStageSearch(query, db, dbName, settings) {
+    const allResults = [];
     
-    // البحث في عينة من السجلات (وليس كلها لتحسين السرعة)
-    const sampleSize = Math.min(150, db.data.length);
+    // 🔥 المرحلة 1: البحث الدلالي السريع
+    const semanticResults = await this.semanticStageSearch(query, db, settings);
+    allResults.push(...semanticResults);
+    
+    // 🔥 المرحلة 2: البحث بالمفاهيم
+    const conceptResults = await this.conceptStageSearch(query, db, settings);
+    allResults.push(...conceptResults);
+    
+    // 🔥 المرحلة 3: البحث بالتجميعات
+    if (settings.semanticClustering) {
+      const clusterResults = await this.clusterStageSearch(query, db, settings);
+      allResults.push(...clusterResults);
+    }
+    
+    // 🔥 المرحلة 4: البحث النصي الاحتياطي
+    if (allResults.length < settings.initialTopK / 2) {
+      const textResults = await this.textStageSearch(query, db, settings);
+      allResults.push(...textResults);
+    }
+    
+    return allResults;
+  }
+
+  /**
+   * 🔥 المرحلة 1: البحث الدلالي
+   */
+  async semanticStageSearch(query, db, settings) {
+    const results = [];
+    const queryVector = await this.generateEmbedding(query.normalized, {}, { expand: true });
+    
+    // البحث في التجميعات أولاً (أسرع)
+    if (db.semanticClusters && db.semanticClusters.size > 0) {
+      for (const [concept, cluster] of db.semanticClusters.entries()) {
+        if (query.normalized.includes(concept) || 
+            query.semanticConcepts.some(qc => qc.includes(concept) || concept.includes(qc))) {
+          
+          const similarity = this.cosineSimilarity(queryVector, cluster.centroid);
+          if (similarity >= settings.minSimilarity * 0.8) {
+            cluster.indices.forEach(idx => {
+              if (idx < db.data.length) {
+                results.push({
+                  ...db.data[idx],
+                  similarity: similarity * 0.9, // تعديل طفيف
+                  _index: idx,
+                  _stage: 'cluster'
+                });
+              }
+            });
+          }
+        }
+      }
+    }
+    
+    // بحث مباشر في عينة من السجلات
+    const sampleSize = Math.min(100, db.data.length);
     const step = Math.max(1, Math.floor(db.data.length / sampleSize));
     
     for (let i = 0; i < db.data.length; i += step) {
-      if (matches.length >= limit) break;
+      if (results.length >= settings.candidateTopK) break;
       
       const record = db.data[i];
-      const vector = db.embeddingCache[i];
-      
-      if (!vector) continue;
-      
-      const similarity = this.cosineSimilarity(queryEmbedding, vector);
-      
-      if (similarity >= settings.candidateSimilarityThreshold) {
-        matches.push({
-          record: record,
-          index: i,
-          similarity: similarity,
-          type: 'vector'
-        });
-      }
-    }
-    
-    return matches.sort((a, b) => b.similarity - a.similarity).slice(0, limit);
-  }
-
-  /**
-   * 🔥 البحث بالمفاهيم
-   */
-  findConceptMatches(query, db, limit = 50) {
-    const matches = [];
-    const queryWords = query.words;
-    
-    for (let i = 0; i < db.data.length; i++) {
-      if (matches.length >= limit) break;
-      
-      const record = db.data[i];
-      const textData = db.quickTextIndex[i];
-      
-      if (!textData) continue;
-      
-      // جمع كل النصوص في سلسلة واحدة
-      const allText = [
-        textData.text,
-        textData.name,
-        textData.preview,
-        textData.keywords,
-        textData.synonyms
-      ].join(' ').toLowerCase();
-      
-      const normalizedText = this.normalizer.normalize(allText);
-      
-      // حساب مطابقة المفاهيم
-      let conceptScore = 0;
-      queryWords.forEach(word => {
-        if (normalizedText.includes(word)) {
-          conceptScore += 2.0;
-        }
+      if (record.embeddings?.multilingual_minilm?.embeddings?.full) {
+        const similarity = this.cosineSimilarity(
+          queryVector, 
+          record.embeddings.multilingual_minilm.embeddings.full
+        );
         
-        // مطابقة جزئية للكلمات الطويلة
-        if (word.length > 4) {
-          for (let j = 0; j < normalizedText.length - word.length; j++) {
-            if (normalizedText.substr(j, word.length) === word) {
-              conceptScore += 1.5;
-              break;
-            }
-          }
-        }
-      });
-      
-      if (conceptScore > 0) {
-        matches.push({
-          record: record,
-          index: i,
-          score: conceptScore,
-          type: 'concept'
-        });
-      }
-    }
-    
-    return matches.sort((a, b) => b.score - a.score).slice(0, limit);
-  }
-
-  /**
-   * 🔥 إزالة التكرارات والترتيب
-   */
-  deduplicateAndSort(candidates, query) {
-    const unique = new Map();
-    
-    candidates.forEach(candidate => {
-      const key = candidate.record.original_data?.text || candidate.record.original_data?.name || candidate.index;
-      
-      if (!unique.has(key)) {
-        unique.set(key, candidate);
-      } else {
-        // تحديث النتيجة إذا كانت أفضل
-        const existing = unique.get(key);
-        const newScore = this.calculateCandidateScore(candidate, query);
-        const existingScore = this.calculateCandidateScore(existing, query);
-        
-        if (newScore > existingScore) {
-          unique.set(key, candidate);
+        if (similarity >= settings.minSimilarity) {
+          results.push({
+            ...record,
+            similarity: similarity,
+            _index: i,
+            _stage: 'semantic'
+          });
         }
       }
-    });
+    }
     
-    return Array.from(unique.values()).sort((a, b) => {
-      return this.calculateCandidateScore(b, query) - this.calculateCandidateScore(a, query);
-    });
+    return results;
   }
 
   /**
-   * 🔥 حساب نقاط المرشح
+   * 🔥 المرحلة 2: البحث بالمفاهيم
    */
-  calculateCandidateScore(candidate, query) {
-    let score = 0;
-    
-    switch(candidate.type) {
-      case 'text':
-        score = candidate.score * 0.5;
-        break;
-      case 'vector':
-        score = candidate.similarity * 2.0;
-        break;
-      case 'concept':
-        score = candidate.score * 0.3;
-        break;
-    }
-    
-    // تعزيز بناءً على نوع الاستعلام
-    if (query.isActivityQuery && candidate.record.original_data?.text?.includes('نشاط')) {
-      score *= 1.3;
-    }
-    
-    return score;
-  }
-
-  /**
-   * 🔥 تقييم المرشحين
-   */
-  async evaluateCandidates(query, candidates, db, settings) {
+  async conceptStageSearch(query, db, settings) {
     const results = [];
-    const queryEmbedding = await this.generateSmartEmbedding(query.enhanced);
+    const candidates = new Set();
     
-    // أخذ أفضل المرشحين للتقييم
-    const topCandidates = candidates.slice(0, settings.refineTopK);
-    
-    for (const candidate of topCandidates) {
-      const finalSimilarity = await this.calculateFinalSimilarity(
-        queryEmbedding,
-        candidate.record,
-        query,
-        settings
-      );
+    // البحث بالمفاهيم الدلالية
+    query.semanticConcepts.forEach(concept => {
+      if (db.semanticIndex.has(concept)) {
+        db.semanticIndex.get(concept).forEach(idx => candidates.add(idx));
+      }
       
-      if (finalSimilarity >= settings.minDisplaySimilarity) {
+      // البحث الجزئي
+      for (const [dbConcept, indices] of db.semanticIndex.entries()) {
+        if (concept.includes(dbConcept) || dbConcept.includes(concept)) {
+          indices.forEach(idx => candidates.add(idx));
+        }
+      }
+    });
+    
+    // معالجة المرشحين
+    const queryVector = await this.generateEmbedding(query.normalized);
+    const indicesArray = Array.from(candidates).slice(0, 50);
+    
+    for (const idx of indicesArray) {
+      if (idx >= db.data.length) continue;
+      
+      const record = db.data[idx];
+      const similarity = await this.calculateSimilarity(queryVector, record, query);
+      
+      if (similarity >= settings.minSimilarity) {
         results.push({
-          ...candidate.record,
-          similarity: finalSimilarity,
-          database: db.name,
-          _index: candidate.index,
-          _matchType: candidate.type,
-          _boosted: finalSimilarity > candidate.similarity
+          ...record,
+          similarity: similarity,
+          _index: idx,
+          _stage: 'concept'
         });
       }
     }
@@ -537,48 +890,105 @@ class VectorEngine {
   }
 
   /**
-   * 🔥 توليد تضمين ذكي
+   * 🔥 المرحلة 3: البحث بالتجميعات
    */
-  async generateSmartEmbedding(text) {
-    // 🔥 محاولة جعل التضمين أكثر تمثيلاً للاستعلامات العربية
-    const vector = new Array(this.vectorDimension).fill(0);
-    const normalized = this.normalizer.normalize(text.toLowerCase());
-    const words = normalized.split(/\s+/).filter(w => w.length > 1);
+  async clusterStageSearch(query, db, settings) {
+    const results = [];
     
-    // تمثيل قوي للكلمات الرئيسية
-    words.forEach((word, idx) => {
-      const importance = 2.0 / Math.sqrt(idx + 1); // وزن أكبر للكلمات الأولى
-      const hash = this.stringHash(word);
-      
-      // توزيع على 20 موقع مختلف
-      for (let i = 0; i < 20; i++) {
-        const pos = Math.abs(hash * (i + 1) + i * 137) % this.vectorDimension;
-        const value = Math.sin(hash + i * 0.5) * importance;
-        vector[pos] += value;
-      }
-    });
+    if (!db.semanticClusters || db.semanticClusters.size === 0) {
+      return results;
+    }
     
-    // تمثيل للعبارات (bigrams)
-    for (let i = 0; i < words.length - 1; i++) {
-      const phrase = words[i] + ' ' + words[i + 1];
-      const hash = this.stringHash(phrase);
+    const queryVector = await this.generateEmbedding(query.normalized);
+    
+    // البحث في التجميعات الأكثر صلة
+    for (const [concept, cluster] of db.semanticClusters.entries()) {
+      // حساب التشابه مع مركز التجمع
+      const clusterSimilarity = this.cosineSimilarity(queryVector, cluster.centroid);
       
-      for (let j = 0; j < 10; j++) {
-        const pos = Math.abs(hash * (j + 2) + j * 89) % this.vectorDimension;
-        vector[pos] += 0.8;
+      if (clusterSimilarity >= settings.minSimilarity * 0.7) {
+        // إضافة أعلى 3 سجلات من هذا التجمع
+        const topIndices = cluster.indices.slice(0, 3);
+        
+        for (const idx of topIndices) {
+          if (idx >= db.data.length) continue;
+          
+          const record = db.data[idx];
+          const recordVector = db.embeddingVectors[idx];
+          
+          if (recordVector) {
+            const similarity = this.cosineSimilarity(queryVector, recordVector);
+            const adjustedSimilarity = similarity * 0.9 + clusterSimilarity * 0.1;
+            
+            if (adjustedSimilarity >= settings.minSimilarity) {
+              results.push({
+                ...record,
+                similarity: adjustedSimilarity,
+                _index: idx,
+                _stage: 'cluster',
+                _cluster: concept
+              });
+            }
+          }
+        }
       }
     }
     
-    return this.normalizeVector(vector);
+    return results;
   }
 
   /**
-   * 🔥 حساب التشابه النهائي
+   * 🔥 المرحلة 4: البحث النصي الاحتياطي
    */
-  async calculateFinalSimilarity(queryVector, record, query, settings) {
+  async textStageSearch(query, db, settings) {
+    const results = [];
+    const queryWords = query.words;
+    
+    // بحث نصي بسيط
+    for (let idx = 0; idx < Math.min(db.data.length, 200); idx++) {
+      if (results.length >= 20) break;
+      
+      const text = db.textCache[idx];
+      if (!text) continue;
+      
+      // حساب مطابقة النص
+      let matchScore = 0;
+      queryWords.forEach(qWord => {
+        if (text.includes(qWord)) {
+          matchScore += 1.0;
+        } else if (qWord.length > 3) {
+          // بحث جزئي
+          for (let i = 0; i < text.length - qWord.length; i++) {
+            if (text.substr(i, qWord.length) === qWord) {
+              matchScore += 0.5;
+              break;
+            }
+          }
+        }
+      });
+      
+      const similarity = matchScore / queryWords.length * 0.5; // تحويل إلى نطاق 0-0.5
+      
+      if (similarity >= settings.minSimilarity * 0.5) {
+        results.push({
+          ...db.data[idx],
+          similarity: similarity,
+          _index: idx,
+          _stage: 'text'
+        });
+      }
+    }
+    
+    return results;
+  }
+
+  /**
+   * 🔥 حساب التشابه المتقدم
+   */
+  async calculateSimilarity(queryVector, record, query) {
     let maxSimilarity = 0;
     
-    // 1. المتجهات المحفوظة (الأولوية)
+    // 1. المتجهات المحفوظة
     if (record.embeddings?.multilingual_minilm?.embeddings) {
       const embeddings = record.embeddings.multilingual_minilm.embeddings;
       const variations = ['full', 'contextual', 'summary', 'key_phrases', 'no_stopwords'];
@@ -586,134 +996,86 @@ class VectorEngine {
       for (const variation of variations) {
         if (embeddings[variation]) {
           const sim = this.cosineSimilarity(queryVector, embeddings[variation]);
-          const weightedSim = sim * settings.semanticWeight;
-          maxSimilarity = Math.max(maxSimilarity, weightedSim);
+          maxSimilarity = Math.max(maxSimilarity, sim);
         }
       }
     }
     
-    // 2. إذا كان التشابه منخفضاً، نحاول توليد تضمين جديد من النص الأصلي
-    if (maxSimilarity < 0.3) {
-      const recordText = record.original_data?.text || record.original_data?.name || '';
-      if (recordText.length > 10) {
-        const recordVector = await this.generateSmartEmbedding(recordText);
-        const directSim = this.cosineSimilarity(queryVector, recordVector);
-        maxSimilarity = Math.max(maxSimilarity, directSim * 0.9);
-      }
+    // 2. توليد مباشر للنص
+    const recordText = record.original_data?.text || record.original_data?.name || '';
+    if (recordText && maxSimilarity < 0.4) {
+      const recordVector = await this.generateEmbedding(recordText, record.original_data);
+      const directSim = this.cosineSimilarity(queryVector, recordVector);
+      maxSimilarity = Math.max(maxSimilarity, directSim * 0.95);
     }
     
-    // 3. تعزيز بالميتاداتا (مهم جداً)
-    const metadataBoost = this.calculateMetadataBoost(record.original_data, query);
-    maxSimilarity = maxSimilarity * (1 - settings.metadataBoost) + metadataBoost * settings.metadataBoost;
-    
-    // 4. تعزيز بالمطابقة النصية المباشرة
-    if (settings.textMatchBoost > 0) {
-      const textMatchScore = this.calculateTextMatchScore(record.original_data, query);
-      maxSimilarity = maxSimilarity * (1 - settings.textMatchBoost) + textMatchScore * settings.textMatchBoost;
-    }
-    
-    // 5. تعزيز إضافي بناءً على نوع الاستعلام
-    if (query.isActivityQuery && record.original_data?.text?.includes('فندق')) {
-      maxSimilarity *= 1.2;
+    // 3. تحسين بالميتاداتا
+    if (record.original_data && maxSimilarity < 0.5) {
+      const metaScore = this.calculateMetadataScore(record.original_data, query);
+      maxSimilarity = Math.max(maxSimilarity, maxSimilarity * 0.8 + metaScore * 0.2);
     }
     
     return Math.min(maxSimilarity, 0.95);
   }
 
   /**
-   * 🔥 حساب تعزيز الميتاداتا
+   * 🔥 حساب نقاط الميتاداتا
    */
-  calculateMetadataBoost(metadata, query) {
-    if (!metadata) return 0;
+  calculateMetadataScore(metadata, query) {
+    let score = 0;
+    const queryLower = query.normalized.toLowerCase();
     
-    let boost = 0;
-    const queryLower = query.normalized;
-    
-    // التحقق من وجود كلمات الاستعلام في الميتاداتا
     const metaFields = [
-      { value: metadata.text, weight: 5.0 },
-      { value: metadata.name, weight: 4.0 },
-      { value: metadata.text_preview, weight: 3.0 },
-      { value: metadata.keywords?.join(' '), weight: 2.5 },
-      { value: metadata.synonyms?.join(' '), weight: 2.0 },
-      { value: metadata.governorate, weight: 1.5 },
-      { value: metadata.dependency, weight: 1.5 }
+      { key: 'text', weight: 5.0 },
+      { key: 'name', weight: 4.0 },
+      { key: 'text_preview', weight: 3.5 },
+      { key: 'keywords', weight: 3.0, isArray: true },
+      { key: 'synonyms', weight: 2.5, isArray: true },
+      { key: 'intent', weight: 2.0, isArray: true },
+      { key: 'governorate', weight: 2.0 },
+      { key: 'dependency', weight: 1.5 },
+      { key: 'decision', weight: 1.5 },
+      { key: 'value', weight: 1.0 }
     ];
     
     metaFields.forEach(field => {
-      if (field.value && typeof field.value === 'string') {
-        const metaText = field.value.toLowerCase();
-        
-        // مطابقة مباشرة
-        if (metaText.includes(queryLower) || queryLower.includes(metaText)) {
-          boost += field.weight * 2.0;
-        }
-        
-        // مطابقة كلمات
-        query.words.forEach(word => {
-          if (metaText.includes(word)) {
-            boost += field.weight;
-          }
-        });
-      }
-    });
-    
-    return Math.min(boost / 20, 1.0);
-  }
-
-  /**
-   * 🔥 حساب نقاط المطابقة النصية
-   */
-  calculateTextMatchScore(metadata, query) {
-    if (!metadata) return 0;
-    
-    const allText = [
-      metadata.text || '',
-      metadata.name || '',
-      metadata.text_preview || '',
-      ...(metadata.keywords || []),
-      ...(metadata.synonyms || [])
-    ].join(' ').toLowerCase();
-    
-    const normalizedText = this.normalizer.normalize(allText);
-    let matchScore = 0;
-    
-    // مطابقة كاملة
-    if (normalizedText.includes(query.normalized)) {
-      matchScore += 3.0;
-    }
-    
-    // مطابقة كلمات
-    query.words.forEach(word => {
-      if (normalizedText.includes(word)) {
-        matchScore += 1.5;
+      const value = metadata[field.key];
+      if (!value) return;
+      
+      let fieldText = '';
+      if (field.isArray && Array.isArray(value)) {
+        fieldText = value.join(' ').toLowerCase();
+      } else {
+        fieldText = String(value).toLowerCase();
       }
       
-      // مطابقة جزئية للكلمات الطويلة
-      if (word.length > 4) {
-        for (let i = 0; i <= normalizedText.length - word.length; i++) {
-          if (normalizedText.substr(i, word.length) === word) {
-            matchScore += 1.0;
-            break;
-          }
+      const normalizedField = this.normalizer.normalize(fieldText);
+      
+      // مطابقة كاملة
+      if (normalizedField.includes(queryLower) || queryLower.includes(normalizedField)) {
+        score += field.weight * 2.0;
+      }
+      
+      // مطابقة كلمات
+      const fieldWords = normalizedField.split(/\s+/);
+      const queryWords = query.words;
+      
+      let matchedWords = 0;
+      queryWords.forEach(qWord => {
+        if (fieldWords.includes(qWord)) {
+          matchedWords++;
+          score += field.weight;
         }
+      });
+      
+      // نسبة التطابق
+      if (queryWords.length > 0) {
+        const matchRatio = matchedWords / queryWords.length;
+        score += field.weight * matchRatio;
       }
     });
     
-    // مطابقة بالمرادفات الموسعة
-    if (this.defaultConfig.enableTextExpansion) {
-      query.words.forEach(word => {
-        if (this.queryExpansionDict[word]) {
-          this.queryExpansionDict[word].forEach(synonym => {
-            if (normalizedText.includes(synonym)) {
-              matchScore += 0.8;
-            }
-          });
-        }
-      });
-    }
-    
-    return Math.min(matchScore / (query.words.length * 3), 1.0);
+    return Math.min(score / 50, 1.0); // تطبيع إلى 0-1
   }
 
   /**
@@ -729,243 +1091,266 @@ class VectorEngine {
     let magB = 0;
 
     for (let i = 0; i < vecA.length; i++) {
-      const a = vecA[i] || 0;
-      const b = vecB[i] || 0;
+      const a = vecA[i];
+      const b = vecB[i];
       dot += a * b;
       magA += a * a;
       magB += b * b;
     }
 
     const mag = Math.sqrt(magA) * Math.sqrt(magB);
-    
-    if (mag === 0) return 0;
-    
-    const similarity = dot / mag;
-    
-    // معالجة خاصة للتشابهات المنخفضة
-    if (similarity < 0.1) {
-      return similarity * 1.5; // رفع التشابهات المنخفضة جداً
-    }
-    
-    return Math.max(0, Math.min(1, similarity));
+    return mag > 0 ? Math.max(0, Math.min(1, dot / mag)) : 0;
   }
 
   /**
    * 🔥 تصفية وترتيب النتائج
    */
-  filterAndRankResults(results, settings) {
+  filterAndRankResults(results, query, settings) {
     if (results.length === 0) return [];
     
-    // ترتيب أولي
-    results.sort((a, b) => b.similarity - a.similarity);
-    
     // إزالة التكرارات
-    const uniqueResults = [];
+    const uniqueResults = this.removeDuplicates(results);
+    
+    // حساب العتبة الذكية
+    const threshold = this.calculateDynamicThreshold(uniqueResults, query, settings);
+    
+    // تصفية بالعتبة
+    const filtered = uniqueResults.filter(r => r.similarity >= threshold);
+    
+    // ترتيب متقدم
+    filtered.sort((a, b) => {
+      const scoreA = this.calculateFinalScore(a, query, settings);
+      const scoreB = this.calculateFinalScore(b, query, settings);
+      return scoreB - scoreA;
+    });
+    
+    return filtered.slice(0, settings.finalTopK);
+  }
+
+  /**
+   * 🔥 إزالة التكرارات
+   */
+  removeDuplicates(results) {
+    const unique = [];
     const seen = new Set();
     
     results.forEach(result => {
       const key = result.original_data?.text || result.original_data?.name || result._index;
-      const shortKey = key.substring(0, 100);
+      const normalizedKey = this.normalizer.normalize(String(key)).substring(0, 100);
       
-      if (!seen.has(shortKey)) {
-        seen.add(shortKey);
-        uniqueResults.push(result);
+      if (!seen.has(normalizedKey)) {
+        seen.add(normalizedKey);
+        unique.push(result);
       }
     });
     
-    // التأكد من وجود نتائج
-    if (uniqueResults.length === 0 && settings.forceFindResults) {
-      return this.createFallbackResults(results.slice(0, 3));
-    }
-    
-    return uniqueResults.slice(0, 5);
+    return unique;
   }
 
   /**
-   * 🔥 البحث النصي الاحتياطي
+   * 🔥 حساب العتبة الديناميكية
    */
-  textBasedFallback(query, db) {
+  calculateDynamicThreshold(results, query, settings) {
+    if (results.length === 0) return settings.minSimilarity;
+    
+    const similarities = results.map(r => r.similarity);
+    const maxSim = Math.max(...similarities);
+    const avgSim = similarities.reduce((a, b) => a + b, 0) / similarities.length;
+    
+    // تحليل نوع السؤال
+    let baseThreshold = settings.minSimilarity;
+    
+    switch (query.questionType) {
+      case 'statistical':
+        baseThreshold = Math.max(0.06, avgSim * 0.3);
+        break;
+      case 'location':
+        baseThreshold = Math.max(0.08, avgSim * 0.4);
+        break;
+      case 'procedural':
+        baseThreshold = Math.max(0.10, avgSim * 0.5);
+        break;
+      case 'comparative':
+        baseThreshold = Math.max(0.12, avgSim * 0.6);
+        break;
+      default:
+        baseThreshold = Math.max(settings.minSimilarity, avgSim * 0.4);
+    }
+    
+    // تعديل بناءً على تعقيد السؤال
+    if (query.isComplex) {
+      baseThreshold *= 0.8; // تخفيض العتبة للأسئلة المعقدة
+    }
+    
+    // إذا كان التشابه الأعلى مرتفعاً
+    if (maxSim > 0.6) {
+      baseThreshold = Math.max(baseThreshold, maxSim * 0.5);
+    }
+    
+    return Math.min(baseThreshold, 0.35); // سقف للعتبة
+  }
+
+  /**
+   * 🔥 حساب النقاط النهائية
+   */
+  calculateFinalScore(result, query, settings) {
+    let score = result.similarity;
+    
+    // تعزيز بناءً على المرحلة
+    switch (result._stage) {
+      case 'semantic':
+        score *= 1.1;
+        break;
+      case 'cluster':
+        score *= 1.05;
+        break;
+      case 'concept':
+        score *= 1.0;
+        break;
+      case 'text':
+        score *= 0.9;
+        break;
+    }
+    
+    // تعزيز بناءً على مطابقة الميتاداتا
+    if (result.original_data) {
+      const metaScore = this.calculateMetadataScore(result.original_data, query);
+      score = score * 0.9 + metaScore * 0.1;
+    }
+    
+    // تعزيز بناءً على طول النص (نصوص أطول قد تكون أكثر شمولاً)
+    const text = result.original_data?.text || '';
+    if (text.length > 100) {
+      score *= 1.05;
+    }
+    
+    return Math.min(score, 1.0);
+  }
+
+  /**
+   * 🔥 تحسين النتائج النهائية
+   */
+  enhanceFinalResults(results, db, settings) {
+    return results.map(result => {
+      const enhanced = { ...result };
+      
+      // إضافة معلومات إضافية
+      if (result.original_data) {
+        enhanced.displayText = this.generateDisplayText(result.original_data);
+        enhanced.summary = this.generateSummary(result.original_data);
+        enhanced.keyPoints = this.extractKeyPoints(result.original_data);
+      }
+      
+      // تصنيف الثقة
+      enhanced.confidence = this.calculateConfidenceLevel(result.similarity);
+      
+      // إضافة مرجع قاعدة البيانات
+      enhanced.databaseInfo = {
+        name: db.name,
+        totalRecords: db.data.length,
+        recordIndex: result._index
+      };
+      
+      return enhanced;
+    });
+  }
+
+  /**
+   * 🔥 توليد نص العرض
+   */
+  generateDisplayText(metadata) {
+    const texts = [];
+    
+    if (metadata.name) texts.push(`**${metadata.name}**`);
+    if (metadata.text) texts.push(metadata.text);
+    if (metadata.text_preview) texts.push(metadata.text_preview);
+    if (metadata.value) texts.push(`القيمة: ${metadata.value}`);
+    
+    return texts.join('\n\n').substring(0, 500);
+  }
+
+  /**
+   * 🔥 توليد ملخص
+   */
+  generateSummary(metadata) {
+    const text = metadata.text || metadata.text_preview || metadata.name || '';
+    if (text.length <= 150) return text;
+    
+    return text.substring(0, 150) + '...';
+  }
+
+  /**
+   * 🔥 استخلاص النقاط الرئيسية
+   */
+  extractKeyPoints(metadata) {
+    const points = [];
+    
+    if (metadata.keywords && Array.isArray(metadata.keywords)) {
+      points.push(...metadata.keywords.slice(0, 3));
+    }
+    
+    if (metadata.governorate) {
+      points.push(`المحافظة: ${metadata.governorate}`);
+    }
+    
+    if (metadata.dependency) {
+      points.push(`التبعية: ${metadata.dependency}`);
+    }
+    
+    return points.slice(0, 5);
+  }
+
+  /**
+   * 🔥 حساب مستوى الثقة
+   */
+  calculateConfidenceLevel(similarity) {
+    if (similarity >= 0.7) return 'عالية جداً';
+    if (similarity >= 0.5) return 'عالية';
+    if (similarity >= 0.3) return 'متوسطة';
+    if (similarity >= 0.15) return 'منخفضة';
+    return 'ضعيفة';
+  }
+
+  /**
+   * 🔥 البحث الاحتياطي
+   */
+  async fallbackSearch(query, db, dbName, settings) {
+    console.log(`🔄 استخدام البحث الاحتياطي لـ ${dbName}`);
+    
     const results = [];
     const queryText = query.normalized || query.original || query;
     
-    console.log(`   🔍 بحث نصي احتياطي عن: "${queryText}"`);
-    
-    // البحث في أول 100 سجل فقط للسرعة
-    const searchLimit = Math.min(100, db.data.length);
-    
-    for (let i = 0; i < searchLimit; i++) {
+    // بحث نصي بسيط
+    for (let i = 0; i < Math.min(db.data.length, 50); i++) {
       const record = db.data[i];
-      const textData = db.quickTextIndex[i];
+      const text = db.textCache[i];
       
-      if (!textData) continue;
-      
-      // البحث في جميع الحقول النصية
-      const allText = [
-        textData.text,
-        textData.name,
-        textData.preview,
-        textData.keywords,
-        textData.synonyms
-      ].join(' ').toLowerCase();
-      
-      if (allText.includes(queryText.substring(0, Math.min(10, queryText.length)))) {
+      if (text && text.includes(queryText.substring(0, 10))) {
         results.push({
           ...record,
-          similarity: 0.25, // ثابت للبحث النصي
-          database: db.name,
+          similarity: 0.15, // ثابت للنتائج الاحتياطية
           _index: i,
-          _matchType: 'text_fallback',
-          _confidence: 'متوسطة'
+          _stage: 'fallback',
+          _confidence: 'منخفضة'
         });
-        
-        if (results.length >= 5) break;
       }
     }
     
-    // إذا لم نجد مطابقة كاملة، نبحث عن كلمات مفردة
-    if (results.length === 0) {
-      const words = queryText.split(/\s+/).filter(w => w.length > 2);
-      
-      for (let i = 0; i < searchLimit; i++) {
-        const record = db.data[i];
-        const textData = db.quickTextIndex[i];
-        
-        if (!textData) continue;
-        
-        const allText = [
-          textData.text,
-          textData.name,
-          textData.preview
-        ].join(' ').toLowerCase();
-        
-        let matchCount = 0;
-        words.forEach(word => {
-          if (allText.includes(word)) {
-            matchCount++;
-          }
-        });
-        
-        if (matchCount >= Math.min(2, words.length)) {
-          results.push({
-            ...record,
-            similarity: 0.2 + (matchCount / words.length) * 0.1,
-            database: db.name,
-            _index: i,
-            _matchType: 'text_partial',
-            _confidence: 'منخفضة'
-          });
-          
-          if (results.length >= 3) break;
-        }
-      }
-    }
-    
-    return results;
-  }
-
-  /**
-   * 🔥 الحصول على عينات عشوائية
-   */
-  getRandomSamples(db, count) {
-    const samples = [];
-    const total = db.data.length;
-    
-    if (total === 0) return [];
-    
-    // اختيار عينات عشوائية
-    for (let i = 0; i < Math.min(count, total); i++) {
-      const randomIndex = Math.floor(Math.random() * total);
-      samples.push({
-        ...db.data[randomIndex],
-        similarity: 0.1,
-        database: db.name,
-        _index: randomIndex,
-        _matchType: 'random_sample',
-        _confidence: 'ضعيفة',
-        _note: 'عينة عشوائية من قاعدة البيانات'
-      });
-    }
-    
-    return samples;
-  }
-
-  /**
-   * 🔥 إنشاء نتائج احتياطية
-   */
-  createFallbackResults(originalResults) {
-    if (originalResults.length === 0) return [];
-    
-    // رفع التشابه للنتائج الموجودة
-    return originalResults.map(result => ({
-      ...result,
-      similarity: Math.min(result.similarity * 1.3, 0.35),
-      _boosted: true,
-      _fallback: true
-    }));
-  }
-
-  /**
-   * 🔥 استراتيجية الطوارئ
-   */
-  emergencyFallback(query, db) {
-    console.log(`   🚨 وضع الطوارئ: البحث عن أي نتائج`);
-    
-    const results = [];
-    
-    // البحث في أول 50 سجل عن أي كلمة من الاستعلام
-    const words = query.split(/\s+/).filter(w => w.length > 2);
-    const searchLimit = Math.min(50, db.data.length);
-    
-    for (let i = 0; i < searchLimit; i++) {
-      const record = db.data[i];
-      const textData = db.quickTextIndex[i];
-      
-      if (!textData) continue;
-      
-      const allText = [
-        textData.text,
-        textData.name,
-        textData.preview
-      ].join(' ').toLowerCase();
-      
-      let foundAny = false;
-      words.forEach(word => {
-        if (allText.includes(word)) {
-          foundAny = true;
-        }
-      });
-      
-      if (foundAny) {
-        results.push({
-          ...record,
-          similarity: 0.15,
-          database: db.name,
-          _index: i,
-          _matchType: 'emergency',
-          _confidence: 'ضعيفة جداً',
-          _note: 'نتيجة من وضع الطوارئ'
-        });
-        
-        if (results.length >= 3) break;
-      }
-    }
-    
-    // إذا لم نجد أي شيء، نعيد أول سجلين
+    // إذا لم نجد نتائج، نعيد أول سجلات القاعدة
     if (results.length === 0 && db.data.length > 0) {
-      return [
-        {
-          ...db.data[0],
+      for (let i = 0; i < Math.min(3, db.data.length); i++) {
+        results.push({
+          ...db.data[i],
           similarity: 0.1,
-          database: db.name,
-          _index: 0,
-          _matchType: 'first_record',
-          _confidence: 'ضعيفة جداً',
-          _note: 'السجل الأول في قاعدة البيانات'
-        }
-      ];
+          _index: i,
+          _stage: 'fallback_last',
+          _confidence: 'ضعيفة',
+          _note: 'نتيجة عامة من قاعدة البيانات'
+        });
+      }
     }
     
-    return results;
+    return results.slice(0, 3);
   }
 
   /**
@@ -981,71 +1366,189 @@ class VectorEngine {
 
     console.log(`⚡ بحث متوازي ذكي في ${settings.databases.length} قواعد...`);
 
+    // تحديث ذاكرة السياق
+    this.contextMemory.lastQueries.push(query);
+    if (this.contextMemory.lastQueries.length > 10) {
+      this.contextMemory.lastQueries.shift();
+    }
+
+    // تنفيذ البحث المتوازي
     const searchPromises = settings.databases.map(dbName => 
       this.semanticSearch(query, dbName, settings)
     );
 
     const allResults = await Promise.all(searchPromises);
 
+    // تجميع النتائج
     const resultMap = {
       activity: allResults[0] || [],
       decision104: allResults[1] || [],
       industrial: allResults[2] || []
     };
 
-    const totalTime = performance.now() - startTime;
-    const totalResults = allResults.reduce((sum, arr) => sum + arr.length, 0);
-    
-    console.log(`✅ اكتمل البحث المتوازي: ${totalResults} نتيجة (${totalTime.toFixed(1)}ms)`);
+    // تحليل النتائج المتقاطعة
+    const crossAnalysis = this.analyzeCrossResults(resultMap, query);
 
+    const totalTime = performance.now() - startTime;
+    
     return {
       ...resultMap,
-      totalResults: totalResults,
+      crossAnalysis: crossAnalysis,
+      totalResults: allResults.reduce((sum, arr) => sum + arr.length, 0),
       query: query,
       searchTime: totalTime,
-      success: totalResults > 0
+      timestamp: Date.now()
     };
   }
 
   /**
-   * 🔥 تحديث الإحصائيات
+   * 🔥 تحليل النتائج المتقاطعة
    */
-  updateStats(searchTime, resultCount) {
+  analyzeCrossResults(resultMap, query) {
+    const analysis = {
+      hasActivityAndLocation: resultMap.activity.length > 0 && resultMap.industrial.length > 0,
+      hasActivityAndIncentives: resultMap.activity.length > 0 && resultMap.decision104.length > 0,
+      totalMatches: Object.values(resultMap).reduce((sum, arr) => sum + arr.length, 0),
+      bestDatabase: null,
+      suggestions: []
+    };
+
+    // تحديد أفضل قاعدة بناءً على النتائج
+    const dbScores = {
+      activity: resultMap.activity.length * 2 + (resultMap.activity[0]?.similarity || 0),
+      decision104: resultMap.decision104.length * 1.5 + (resultMap.decision104[0]?.similarity || 0),
+      industrial: resultMap.industrial.length * 1.2 + (resultMap.industrial[0]?.similarity || 0)
+    };
+
+    const bestDb = Object.entries(dbScores).sort((a, b) => b[1] - a[1])[0];
+    analysis.bestDatabase = bestDb[0];
+
+    // توليد اقتراحات
+    if (resultMap.activity.length === 0 && /فندق|مصنع|مطعم/.test(query)) {
+      analysis.suggestions.push('جرب البحث بكلمات أكثر تحديداً مثل "اشتراطات فندق" أو "متطلبات مطعم"');
+    }
+
+    if (resultMap.industrial.length === 0 && /منطقة|صناعية|موقع/.test(query)) {
+      analysis.suggestions.push('جرب البحث باسم محافظة محددة أو "مناطق صناعية في..."');
+    }
+
+    return analysis;
+  }
+
+  /**
+   * 🔥 تحديث إحصائيات البحث
+   */
+  updateSearchStats(dbName, searchTime, resultCount) {
     this.stats.totalSearches++;
     
     if (resultCount > 0) {
       this.stats.successfulSearches++;
-      
-      if (resultCount >= 3) {
-        this.stats.highQualityMatches++;
-      }
+    } else {
+      this.stats.failedSearches++;
     }
     
     this.stats.averageSearchTime = 
       (this.stats.averageSearchTime * (this.stats.totalSearches - 1) + searchTime) 
       / this.stats.totalSearches;
+    
+    // تحديث مطابقات الثقة العالية
+    if (resultCount > 0) {
+      this.stats.highConfidenceMatches += resultCount;
+    }
   }
 
   /**
-   * 🔥 الحصول على إحصائيات
+   * 🔥 تحديث ذاكرة السياق
+   */
+  updateContextMemory(query, dbName, results) {
+    if (results.length > 0) {
+      const topResult = results[0];
+      this.contextMemory.lastResults[dbName] = {
+        query: query,
+        result: topResult,
+        timestamp: Date.now()
+      };
+      
+      // تحديث تدفق المحادثة
+      this.contextMemory.conversationFlow.push({
+        type: 'search',
+        database: dbName,
+        query: query.substring(0, 100),
+        resultCount: results.length,
+        time: Date.now()
+      });
+      
+      // الحفاظ على حجم معقول
+      if (this.contextMemory.conversationFlow.length > 20) {
+        this.contextMemory.conversationFlow.shift();
+      }
+    }
+  }
+
+  /**
+   * 🔥 تفريغ ذاكرة التخزين المؤقت
+   */
+  clearCache() {
+    this.embeddingCache.clear();
+    this.semanticCache.clear();
+    
+    this.stats.cacheHits = 0;
+    this.stats.cacheMisses = 0;
+    
+    console.log('🧹 تم تنظيف ذاكرة التخزين المؤقت');
+  }
+
+  /**
+   * 🔥 تفريغ ذاكرة السياق
+   */
+  clearContext() {
+    this.contextMemory = {
+      lastQueries: [],
+      lastResults: {},
+      conversationFlow: [],
+      entityHistory: [],
+      sessionStart: Date.now(),
+      queryPatterns: new Map()
+    };
+    
+    console.log('🧠 تم مسح ذاكرة السياق');
+  }
+
+  /**
+   * 📊 الحصول على إحصائيات متقدمة
    */
   getStatistics() {
-    const successRate = this.stats.totalSearches > 0 
-      ? (this.stats.successfulSearches / this.stats.totalSearches * 100).toFixed(1)
+    const totalCacheAccess = this.stats.cacheHits + this.stats.cacheMisses;
+    const cacheHitRate = totalCacheAccess > 0 
+      ? (this.stats.cacheHits / totalCacheAccess * 100).toFixed(2)
+      : 0;
+    
+    const successRate = this.stats.totalSearches > 0
+      ? (this.stats.successfulSearches / this.stats.totalSearches * 100).toFixed(2)
       : 0;
     
     return {
-      بحث: {
-        إجمالي_عمليات_البحث: this.stats.totalSearches,
-        عمليات_بحث_ناجحة: this.stats.successfulSearches,
-        معدل_النجاح: `${successRate}%`,
-        متوسط_زمن_البحث: `${this.stats.averageSearchTime.toFixed(1)}ms`,
-        نتائج_عالية_الجودة: this.stats.highQualityMatches
+      أساسية: {
+        عمليات_بحث: this.stats.totalSearches,
+        نجاح: `${successRate}%`,
+        فشل: this.stats.failedSearches,
+        متوسط_الزمن: `${this.stats.averageSearchTime.toFixed(1)}ms`
+      },
+      ذاكرة: {
+        حجم_التخزين: this.embeddingCache.size,
+        نسبة_الإصابة: `${cacheHitRate}%`,
+        تجمعات_دلالية: this.stats.semanticClusters,
+        مطابقات_عالية: this.stats.highConfidenceMatches
       },
       قواعد: {
-        الأنشطة: this.databases.activity?.data?.length || 0,
-        القرار_104: this.databases.decision104?.data?.length || 0,
-        المناطق: this.databases.industrial?.data?.length || 0
+        أنشطة: this.databases.activity?.data?.length || 0,
+        قرار_104: this.databases.decision104?.data?.length || 0,
+        مناطق: this.databases.industrial?.data?.length || 0
+      },
+      سياق: {
+        استعلامات_سابقة: this.contextMemory.lastQueries.length,
+        محادثة: this.contextMemory.conversationFlow.length,
+        مدة_الجلسة: `${((Date.now() - this.contextMemory.sessionStart) / 1000).toFixed(1)}s`
       }
     };
   }
@@ -1054,23 +1557,92 @@ class VectorEngine {
    * 🛠️ أدوات مساعدة
    */
   
+  getEmbeddingCacheKey(text, metadata, options) {
+    const metaStr = JSON.stringify(metadata);
+    const optionsStr = JSON.stringify(options);
+    return `${text}::${this.stringHash(metaStr)}::${this.stringHash(optionsStr)}`;
+  }
+
+  addToEmbeddingCache(key, value) {
+    if (this.embeddingCache.size >= this.maxCacheSize) {
+      const firstKey = this.embeddingCache.keys().next().value;
+      this.embeddingCache.delete(firstKey);
+    }
+    this.embeddingCache.set(key, value);
+  }
+
   normalizeVector(vector) {
     const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
     return magnitude > 0 ? vector.map(v => v / magnitude) : vector;
   }
 
   stringHash(str) {
-    let hash = 0;
+    let hash = 5381;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = ((hash << 5) + hash) + char;
       hash = hash & hash;
     }
     return Math.abs(hash);
   }
 
-  clearCache() {
-    console.log('🧹 تم إعادة تهيئة المحرك');
+  generateFallbackEmbedding(text) {
+    const vector = new Array(this.vectorDimension).fill(0);
+    const words = this.normalizer.normalize(text).split(/\s+/);
+    
+    words.forEach((word, idx) => {
+      const hash = this.stringHash(word);
+      const pos = Math.abs(hash) % this.vectorDimension;
+      const weight = 1.0 / Math.sqrt(idx + 1);
+      vector[pos] = weight;
+    });
+    
+    return this.normalizeVector(vector);
+  }
+
+  enableEmergencyMode() {
+    console.warn('🚨 تم تفعيل وضع الطوارئ - استخدام إعدادات مبسطة');
+    
+    this.defaultConfig = {
+      minSimilarity: 0.05,
+      semanticWeight: 0.5,
+      keywordWeight: 0.5,
+      finalTopK: 3
+    };
+  }
+
+  async warmupCache() {
+    console.log('🔥 تسخين ذاكرة التخزين المؤقت...');
+    
+    const warmupQueries = [
+      'فندق',
+      'منطقة صناعية',
+      'قرار 104',
+      'ترخيص',
+      'اشتراطات',
+      'محافظة'
+    ];
+    
+    for (const query of warmupQueries) {
+      await this.generateEmbedding(query);
+    }
+    
+    console.log('✅ اكتمل تسخين الذاكرة المؤقتة');
+  }
+
+  getInitialStats() {
+    return {
+      قواعد_محمولة: Object.values(this.databases).filter(db => db).length,
+      سجلات_كلية: Object.values(this.databases).reduce((sum, db) => sum + (db?.data?.length || 0), 0),
+      أبعاد_المتجهات: this.vectorDimension,
+      وضع_التشغيل: 'متقدم'
+    };
+  }
+
+  async buildSemanticStructures() {
+    // يمكن إضافة بنى دلالية إضافية هنا
+    console.log('🏗️ بناء الهياكل الدلالية الإضافية...');
+    return true;
   }
 }
 
