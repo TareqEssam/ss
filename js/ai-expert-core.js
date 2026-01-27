@@ -152,44 +152,28 @@ class AIExpertCore {
     console.log('📥 تحميل قواعد البيانات من الملفات...');
 
     try {
-      console.log('   🔢 تحميل قواعد المتجهات...');
-      
-      if (window.activityVectors && window.decision104Vectors && window.industrialVectors) {
-        console.log('   ✅ البيانات موجودة في window');
+      // التحقق من المتغيرات العالمية (التي تم توليدها بواسطة السكريبت الجديد)
+      if (window.activityVectorsData && window.decisionVectorsData && window.industrialVectorsData) {
+        console.log('   ✅ تم العثور على البيانات في window (الإصدار 3.1)');
+        this.vectorDatabases.activity = window.activityVectorsData;
+        this.vectorDatabases.decision104 = window.decisionVectorsData;
+        this.vectorDatabases.industrial = window.industrialVectorsData;
+      } 
+      // دعم خلفي إذا كانت بأسماء قديمة
+      else if (window.activityVectors && window.decision104Vectors && window.industrialVectors) {
         this.vectorDatabases.activity = window.activityVectors;
         this.vectorDatabases.decision104 = window.decision104Vectors;
         this.vectorDatabases.industrial = window.industrialVectors;
-      } else {
-        console.log('   📥 تحميل البيانات من الملفات...');
-        const [activityVectors, decision104Vectors, industrialVectors] = await Promise.all([
-          import('../data/activity_vectors.js'),
-          import('../data/decision104_vectors.js'),
-          import('../data/industrial_vectors.js')
-        ]);
-
-        this.vectorDatabases.activity = activityVectors.default;
-        this.vectorDatabases.decision104 = decision104Vectors.default;
-        this.vectorDatabases.industrial = industrialVectors.default;
       }
 
-      console.log('   ✅ تم تحميل قواعد المتجهات');
-
-      console.log('   📝 ربط قواعد البيانات النصية...');
-      
-      if (typeof window.textDatabases !== 'undefined') {
-        this.textDatabases = window.textDatabases;
-      } else if (typeof masterActivityDB !== 'undefined' && 
-                 typeof decision104DB !== 'undefined' && 
-                 typeof industrialDB !== 'undefined') {
-        this.textDatabases = {
-          activities: masterActivityDB,
-          decision104: decision104DB,
-          industrial: industrialDB
-        };
+      // ربط قواعد البيانات النصية
+      if (typeof masterActivityDB !== 'undefined') {
+        this.textDatabases.activities = masterActivityDB;
+        this.textDatabases.decision104 = decision104DB;
+        this.textDatabases.industrial = industrialDB;
       }
 
       return true;
-
     } catch (error) {
       console.error('❌ فشل تحميل قواعد البيانات:', error);
       throw error;
@@ -197,38 +181,39 @@ class AIExpertCore {
   }
 
   _validateDatabases() {
-    console.log('🔍 التحقق من قواعد البيانات...');
+    console.log('🔍 التحقق من قواعد البيانات (إصدار 3.1)...');
 
     let isValid = true;
 
     ['activity', 'decision104', 'industrial'].forEach(dbName => {
       const db = this.vectorDatabases[dbName];
       
-      if (!db || !db.data || !Array.isArray(db.data)) {
-        console.error(`❌ قاعدة ${dbName} غير صالحة!`);
+      // التعديل هنا: البحث عن vectors بدلاً من data
+      const vectorList = db?.vectors || db?.data;
+
+      if (!db || !vectorList || !Array.isArray(vectorList)) {
+        console.error(`❌ قاعدة ${dbName} غير صالحة أو فارغة!`);
         isValid = false;
         return;
       }
 
+      // التحقق من صحة السجلات (البحث في الهيكل الجديد والقديم)
       let validRecords = 0;
-      db.data.forEach(record => {
-        if (record.embeddings?.multilingual_minilm?.embeddings) {
+      vectorList.forEach(record => {
+        // التحقق من الهيكل الجديد الذي يضع المتجه في مفتاح 'vector' مباشرة
+        if (record.vector || record.embeddings?.multilingual_minilm?.embeddings) {
           validRecords++;
         }
       });
 
-      const percentage = ((validRecords / db.data.length) * 100).toFixed(1);
-      console.log(`   ✓ ${dbName}: ${validRecords}/${db.data.length} سجل صالح (${percentage}%)`);
+      const percentage = ((validRecords / vectorList.length) * 100).toFixed(1);
+      console.log(`   ✓ ${dbName}: ${validRecords}/${vectorList.length} سجل صالح (${percentage}%)`);
 
       if (validRecords === 0) {
         console.error(`❌ قاعدة ${dbName} لا تحتوي على متجهات صالحة!`);
         isValid = false;
       }
     });
-
-    if (isValid) {
-      console.log('✅ جميع قواعد البيانات صالحة');
-    }
 
     return isValid;
   }
@@ -601,3 +586,4 @@ class AIExpertCore {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = AIExpertCore;
 }
+
