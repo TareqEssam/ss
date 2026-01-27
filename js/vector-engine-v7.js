@@ -263,43 +263,23 @@ class VectorEngineV7 {
   _calculateSimilarityFromPrecomputed(queryVector, record, normalizedQuery) {
     let bestScore = 0;
 
-    if (record.embeddings?.multilingual_minilm?.embeddings) {
-      const embeddings = record.embeddings.multilingual_minilm.embeddings;
-      
-      const variations = ['full', 'contextual', 'summary', 'key_phrases', 'no_stopwords'];
-      const scores = [];
-      
-      for (const variant of variations) {
-        if (embeddings[variant] && Array.isArray(embeddings[variant])) {
-          const sim = this.cosineSimilarity(queryVector, embeddings[variant]);
-          if (sim > 0) {
-            scores.push(sim);
-          }
-        }
-      }
-      
-      if (scores.length > 0) {
-        scores.sort((a, b) => b - a);
-        const topScore = scores[0];
-        const top2Avg = scores.slice(0, 2).reduce((a, b) => a + b, 0) / Math.min(2, scores.length);
-        bestScore = Math.max(topScore, top2Avg * 0.95);
-      }
+    // ✅ التعديل الجديد: دعم الهيكل المركز v3.1
+    if (record.vector && Array.isArray(record.vector)) {
+        bestScore = this.cosineSimilarity(queryVector, record.vector);
+    } 
+    // دعم الهيكل القديم (للتوافق الرجعي فقط)
+    else if (record.embeddings?.multilingual_minilm?.embeddings) {
+        const embeddings = record.embeddings.multilingual_minilm.embeddings;
+        const variations = ['full', 'contextual', 'summary'];
+        let scores = variations
+            .map(v => embeddings[v] ? this.cosineSimilarity(queryVector, embeddings[v]) : 0);
+        bestScore = Math.max(...scores);
     }
 
-    // تعزيز نصي
+    // تعزيز نصي (Text Boost) كما هو في كودك الرائع
     const textBoost = this._calculateTextBoost(normalizedQuery, record);
-    
-    return Math.min(1.0, bestScore * 0.85 + textBoost * 0.15);
-  }
-
-  _extractRecordText(record) {
-    const data = record.original_data;
-    return data.text_preview || 
-           data.text || 
-           data.name || 
-           data.value || 
-           JSON.stringify(data).substring(0, 200);
-  }
+    return Math.min(1.0, bestScore * 0.80 + textBoost * 0.20);
+}
 
   /**
    * 🔥 تعزيز نصي محسّن
@@ -588,4 +568,5 @@ class VectorEngineV7 {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = VectorEngineV7;
 }
+
 
