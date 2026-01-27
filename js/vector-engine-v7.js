@@ -108,20 +108,23 @@ class VectorEngineV7 {
     return true;
   }
 
-  _validateDatabases() {
-    for (const [dbName, db] of Object.entries(this.databases)) {
-      if (!db || !db.data) continue;
-      
-      let validCount = 0;
-      db.data.forEach(record => {
-        if (record.embeddings?.multilingual_minilm?.embeddings) {
-          validCount++;
-        }
-      });
-      
-      console.log(`   ✓ ${dbName}: ${validCount}/${db.data.length} سجل صالح`);
-    }
-  }
+ _validateDatabases() {
+    console.log('🔍 التحقق من قواعد البيانات v3.1...');
+    let isValid = true;
+
+    ['activity', 'decision104', 'industrial'].forEach(dbName => {
+        const db = this.vectorDatabases[dbName];
+        // في v3.1، البيانات قد تكون في db.vectors أو db.data
+        const records = db.vectors || db.data || [];
+        
+        let validRecords = records.filter(r => r.vector || r.embeddings).length;
+        const percentage = ((validRecords / records.length) * 100).toFixed(1);
+        
+        console.log(`  ✓ ${dbName}: ${validRecords}/${records.length} سجل صالح (${percentage}%)`);
+        if (validRecords === 0) isValid = false;
+    });
+    return isValid;
+}
 
   /**
    * 🔢 توليد متجه - مع Cache ذكي
@@ -585,3 +588,4 @@ class VectorEngineV7 {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = VectorEngineV7;
 }
+
