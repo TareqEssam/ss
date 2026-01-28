@@ -164,11 +164,15 @@
 console.log('📦 تحميل قواعد البيانات المتجهية...');
 
 // استيراد الملفات
+// داخل الـ try في الجزء الخاص بالمرحلة 1
+updateProgress('📦 تحميل قواعد البيانات المتجهية...');
+
+// استيراد الملفات (تأكد أن المسارات صحيحة بالنسبة لملف index.html)
 await import('./data/activity_vectors.js');
 await import('./data/decision104_vectors.js');
 await import('./data/industrial_vectors.js');
 
-// ربط المتغيرات التي ولدها سكريبت بايثون (التي تبدأ بـ window)
+// الربط بين مخرجات بايثون ومتطلبات النواة
 window.activityVectors = window.activityVectorsData;
 window.decision104Vectors = window.decisionVectorsData;
 window.industrialVectors = window.industrialVectorsData;
@@ -438,4 +442,5 @@ if (typeof env !== 'undefined') {
 
 </body>
 </html>
+
 
