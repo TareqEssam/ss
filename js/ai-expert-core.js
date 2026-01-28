@@ -357,7 +357,7 @@ class AIExpertCore {
     try {
       console.log(`\n${'='.repeat(60)}`);
       console.log(`🔍 استعلام جديد: "${query}"`);
-      console.log(${'='.repeat(60)});
+      console.log(`${'='.repeat(60)}`);
 
       // 1. التحقق من الذاكرة المتعلمة
       const learnedResponse = await this.learningSystem.getLearnedResponse(query);
@@ -411,7 +411,7 @@ class AIExpertCore {
       this._updateStats(response.success, responseTime);
 
       console.log(`✅ اكتملت المعالجة (${responseTime.toFixed(0)}ms)`);
-      console.log(${'='.repeat(60)}\n);
+      console.log(`${'='.repeat(60)}\n`);
 
       return response;
 
