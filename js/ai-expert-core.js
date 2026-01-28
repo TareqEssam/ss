@@ -582,7 +582,7 @@ class AIExpertCore {
   }
 
   /**
-   * 🗂️ بناء الفهرس
+   * 🗂️ بناء الفهرس - النسخة المُصححة
    */
   async _buildMetaIndex() {
     console.log('🗂️ بناء الفهرس...');
@@ -592,42 +592,71 @@ class AIExpertCore {
     const activities = new Set();
     const authorities = new Set();
 
-    // استخراج من المناطق الصناعية
-    if (this.vectorDatabases.industrial?.data) {
-      this.vectorDatabases.industrial.data.forEach(record => {
-        const data = record.original_data;
-        if (data.governorate) governorates.add(data.governorate);
-        if (data.name) locations.add(data.name);
-        if (data.dependency) authorities.add(data.dependency);
+    try {
+      // استخراج من المناطق الصناعية
+      if (this.vectorDatabases.industrial?.data) {
+        this.vectorDatabases.industrial.data.forEach(record => {
+          if (!record) return;
+          
+          // محاولة الوصول للبيانات من مصادر متعددة
+          const data = record.original_data || record;
+          
+          if (data && typeof data === 'object') {
+            if (data.governorate) governorates.add(data.governorate);
+            if (data.name) locations.add(data.name);
+            if (data.dependency) authorities.add(data.dependency);
+          }
+        });
+      }
+
+      // استخراج من الأنشطة
+      if (this.vectorDatabases.activity?.data) {
+        this.vectorDatabases.activity.data.forEach(record => {
+          if (!record) return;
+          
+          const data = record.original_data || record;
+          const preview = data?.text_preview || data?.text || data?.enriched_text || '';
+          
+          if (preview && typeof preview === 'string') {
+            try {
+              const words = this.normalizer.normalize(preview)
+                .split(/\s+/)
+                .filter(w => w && w.length > 3);
+              words.slice(0, 5).forEach(word => {
+                if (word) activities.add(word);
+              });
+            } catch (err) {
+              console.warn('تحذير: خطأ في معالجة النشاط:', err.message);
+            }
+          }
+        });
+      }
+
+      this.metaIndex = {
+        governorates: Array.from(governorates),
+        locations: Array.from(locations),
+        activities: Array.from(activities).slice(0, 500),
+        authorities: Array.from(authorities)
+      };
+
+      console.log('✅ تم بناء الفهرس:', {
+        governorates: this.metaIndex.governorates.length,
+        locations: this.metaIndex.locations.length,
+        activities: this.metaIndex.activities.length,
+        authorities: this.metaIndex.authorities.length
       });
+      
+    } catch (error) {
+      console.error('❌ خطأ في بناء الفهرس:', error);
+      // إنشاء فهرس فارغ كاحتياط
+      this.metaIndex = {
+        governorates: [],
+        locations: [],
+        activities: [],
+        authorities: []
+      };
+      console.warn('⚠️ تم إنشاء فهرس فارغ');
     }
-
-    // استخراج من الأنشطة
-    if (this.vectorDatabases.activity?.data) {
-      this.vectorDatabases.activity.data.forEach(record => {
-        const preview = record.original_data?.text_preview || '';
-        if (preview) {
-          const words = this.normalizer.normalize(preview)
-            .split(/\s+/)
-            .filter(w => w.length > 3);
-          words.slice(0, 5).forEach(word => activities.add(word));
-        }
-      });
-    }
-
-    this.metaIndex = {
-      governorates: Array.from(governorates),
-      locations: Array.from(locations),
-      activities: Array.from(activities).slice(0, 500),
-      authorities: Array.from(authorities)
-    };
-
-    console.log('✅ تم بناء الفهرس:', {
-      governorates: this.metaIndex.governorates.length,
-      locations: this.metaIndex.locations.length,
-      activities: this.metaIndex.activities.length,
-      authorities: this.metaIndex.authorities.length
-    });
   }
 
   /**
