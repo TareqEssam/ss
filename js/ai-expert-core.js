@@ -184,18 +184,18 @@ class AIExpertCore {
     console.log('🔍 التحقق من قواعد البيانات (إصدار 3.1)...');
 
     let isValid = true;
+  ['activity', 'decision104', 'industrial'].forEach(dbName => {
+    const db = this.vectorDatabases[dbName];
+    // التحقق من وجود المفتاح vectors (الإصدار 3.1)
+    const records = db?.vectors || db?.data; 
 
-    ['activity', 'decision104', 'industrial'].forEach(dbName => {
-      const db = this.vectorDatabases[dbName];
-      
-      // التعديل هنا: البحث عن vectors بدلاً من data
-      const vectorList = db?.vectors || db?.data;
-
-      if (!db || !vectorList || !Array.isArray(vectorList)) {
-        console.error(`❌ قاعدة ${dbName} غير صالحة أو فارغة!`);
-        isValid = false;
-        return;
-      }
+    if (!db || !records || !Array.isArray(records)) {
+      console.error(`❌ قاعدة ${dbName} غير صالحة!`);
+      isValid = false;
+    }
+  });
+  return isValid;
+}
 
       // التحقق من صحة السجلات (البحث في الهيكل الجديد والقديم)
       let validRecords = 0;
@@ -586,4 +586,5 @@ class AIExpertCore {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = AIExpertCore;
 }
+
 
