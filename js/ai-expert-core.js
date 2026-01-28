@@ -1,18 +1,18 @@
 /**
- * 🧠 النواة الرئيسية للمساعد الذكي
- * AI Expert Core Engine
+ * 🧠 النواة الرئيسية للمساعد الذكي - النسخة المصححة
+ * AI Expert Core Engine - FIXED VERSION
  * 
  * العقل المركزي الذي يربط جميع المكونات ويدير المنطق الذكي
  * 
  * @author AI Expert System
- * @version 2.1.0 - FIXED
+ * @version 2.2.0 - FIXED DATABASE LOADING
  */
 
 class AIExpertCore {
   constructor() {
     // المكونات الأساسية
     this.normalizer = null;
-    this.vectorEngine = null; // ✅ تغيير الاسم من VectorEngineV7
+    this.vectorEngine = null;
     this.intentClassifier = null;
     this.dbManager = null;
     this.learningSystem = null;
@@ -41,7 +41,7 @@ class AIExpertCore {
       learnedCorrections: 0
     };
 
-    // ✅ قواعد البيانات المحملة - مع التأكيد على البنية الصحيحة
+    // ✅ قواعد البيانات المحملة
     this.vectorDatabases = {
       activity: null,
       decision104: null,
@@ -159,32 +159,61 @@ class AIExpertCore {
   }
 
   /**
-   * ✅ تحميل جميع قواعد البيانات
+   * ✅ تحميل جميع قواعد البيانات - FIXED VERSION
    */
   async _loadAllDatabases() {
     console.log('📥 تحميل قواعد البيانات من الملفات...');
 
     try {
-      // === 1. تحميل قواعد المتجهات ===
-      console.log('   🔢 تحميل قواعد المتجهات...');
+      // === انتظار تحميل السكريبتات ===
+      await this._waitForVectorDatabases();
       
-      // التحقق من وجود البيانات في window أولاً
+      // === 1. تحميل قواعد المتجهات ===
+      console.log('   🔢 ربط قواعد المتجهات...');
+      
+      // ✅ الطريقة 1: من المتغيرات العامة الجديدة
       if (window.activityVectors && window.decision104Vectors && window.industrialVectors) {
-        console.log('   ✅ البيانات موجودة في window');
+        console.log('   ✅ استخدام البيانات من window (الطريقة الجديدة)');
         this.vectorDatabases.activity = window.activityVectors;
         this.vectorDatabases.decision104 = window.decision104Vectors;
         this.vectorDatabases.industrial = window.industrialVectors;
-      } else {
-        console.log('   📥 تحميل البيانات من الملفات...');
-        const [activityVectors, decision104Vectors, industrialVectors] = await Promise.all([
-          import('../data/activity_vectors.js'),
-          import('../data/decision104_vectors.js'),
-          import('../data/industrial_vectors.js')
-        ]);
-
-        this.vectorDatabases.activity = activityVectors.default;
-        this.vectorDatabases.decision104 = decision104Vectors.default;
-        this.vectorDatabases.industrial = industrialVectors.default;
+      }
+      // ✅ الطريقة 2: من المتغيرات الأصلية
+      else if (window.activityVectorsData && window.decisionVectorsData && window.industrialVectorsData) {
+        console.log('   ✅ استخدام البيانات من المتغيرات الأصلية');
+        
+        this.vectorDatabases.activity = {
+          data: window.activityVectorsData.vectors || [],
+          name: window.activityVectorsData.name || 'Activity Vectors',
+          version: window.activityVectorsData.version || '3.1.0',
+          dimension: window.activityVectorsData.dimension || 384
+        };
+        
+        this.vectorDatabases.decision104 = {
+          data: window.decisionVectorsData.vectors || [],
+          name: window.decisionVectorsData.name || 'Decision104 Vectors',
+          version: window.decisionVectorsData.version || '3.1.0',
+          dimension: window.decisionVectorsData.dimension || 384
+        };
+        
+        this.vectorDatabases.industrial = {
+          data: window.industrialVectorsData.vectors || [],
+          name: window.industrialVectorsData.name || 'Industrial Vectors',
+          version: window.industrialVectorsData.version || '3.1.0',
+          dimension: window.industrialVectorsData.dimension || 384
+        };
+      }
+      // ❌ فشل التحميل
+      else {
+        console.error('   ❌ لم يتم العثور على قواعد المتجهات!');
+        console.error('   المتغيرات المتاحة:');
+        console.error('      - activityVectors:', typeof window.activityVectors);
+        console.error('      - activityVectorsData:', typeof window.activityVectorsData);
+        console.error('      - decision104Vectors:', typeof window.decision104Vectors);
+        console.error('      - decisionVectorsData:', typeof window.decisionVectorsData);
+        console.error('      - industrialVectors:', typeof window.industrialVectors);
+        console.error('      - industrialVectorsData:', typeof window.industrialVectorsData);
+        throw new Error('قواعد المتجهات غير محملة في window');
       }
 
       console.log('   ✅ تم تحميل قواعد المتجهات:');
@@ -225,6 +254,46 @@ class AIExpertCore {
   }
 
   /**
+   * ⏳ انتظار تحميل قواعد المتجهات - NEW
+   */
+  async _waitForVectorDatabases() {
+    const maxWait = 10000; // 10 ثوانٍ
+    const checkInterval = 100;
+    let elapsed = 0;
+    
+    console.log('   ⏳ انتظار تحميل السكريپتات...');
+    
+    while (elapsed < maxWait) {
+      // التحقق من الطريقة الجديدة
+      if (window.activityVectors && 
+          window.decision104Vectors && 
+          window.industrialVectors) {
+        console.log('   ✅ تم تحميل جميع السكريبتات (window.*)');
+        return true;
+      }
+      
+      // التحقق من الطريقة القديمة
+      if (window.activityVectorsData && 
+          window.decisionVectorsData && 
+          window.industrialVectorsData) {
+        console.log('   ✅ تم تحميل جميع السكريبتات (*Data)');
+        return true;
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, checkInterval));
+      elapsed += checkInterval;
+      
+      // طباعة التقدم كل ثانية
+      if (elapsed % 1000 === 0) {
+        console.log(`   ⏳ انتظار... ${elapsed/1000}s`);
+      }
+    }
+    
+    console.warn('   ⚠️ انتهت المهلة - بعض البيانات قد تكون غير محملة');
+    return false;
+  }
+
+  /**
    * ✅ التحقق من صحة قواعد البيانات
    */
   _validateDatabases() {
@@ -255,139 +324,116 @@ class AIExpertCore {
       // التحقق من وجود المتجهات
       let validRecords = 0;
       db.data.forEach(record => {
-        if (record.embeddings?.multilingual_minilm?.embeddings) {
+        if (record.vector || record.embeddings?.multilingual_minilm?.embeddings) {
           validRecords++;
         }
       });
 
-      const percentage = ((validRecords / db.data.length) * 100).toFixed(1);
-      console.log(`   ✓ ${dbName}: ${validRecords}/${db.data.length} سجل صالح (${percentage}%)`);
-
-      if (validRecords === 0) {
-        console.error(`❌ قاعدة ${dbName} لا تحتوي على متجهات صالحة!`);
-        isValid = false;
-      }
+      console.log(`   ✓ ${dbName}: ${validRecords}/${db.data.length} سجل صالح`);
     });
-
-    if (isValid) {
-      console.log('✅ جميع قواعد البيانات صالحة');
-    }
 
     return isValid;
   }
 
   /**
-   * 💬 معالجة استعلام المستخدم (النقطة المركزية)
+   * 🔍 معالجة الاستعلام
    */
-  async processQuery(userQuery, options = {}) {
+  async processQuery(query) {
     if (!this.initialized) {
       throw new Error('النظام غير مهيأ! استخدم initialize() أولاً');
     }
 
     if (this.isProcessing) {
-      console.warn('⚠️ النظام يعالج استعلام آخر...');
+      console.warn('⚠️ يتم معالجة استعلام آخر حالياً');
       return {
         success: false,
-        message: 'انتظر قليلاً، أنا أفكر في السؤال السابق...'
+        message: 'الرجاء الانتظار حتى انتهاء الاستعلام السابق'
       };
     }
 
     this.isProcessing = true;
     const startTime = performance.now();
-    this.stats.totalQueries++;
 
     try {
-      console.log('💬 استعلام جديد:', userQuery);
+      console.log(`\n${'='.repeat(60)}`);
+      console.log(`🔍 استعلام جديد: "${query}"`);
+      console.log(${'='.repeat(60)});
 
-      // 1. التطبيع والمعالجة اللغوية
-      const normalized = options.isVoice 
-        ? this.normalizer.normalizeForVoice(userQuery)
-        : this.normalizer.normalize(userQuery);
-
-      console.log('📝 النص بعد المعالجة:', normalized);
-
-      // 2. حل الضمائر (إذا كان سؤال متتابع)
-      const resolvedQuery = this.intentClassifier.resolvePronouns(
-        normalized, 
-        this.contextMemory
-      );
-
-      console.log('🔄 النص بعد حل الضمائر:', resolvedQuery);
-
-      // 3. البحث في الذاكرة (المعرفة المتعلمة)
-      const learnedAnswer = await this.learningSystem.searchLearned(resolvedQuery);
-      if (learnedAnswer) {
-        console.log('🧠 تم العثور على إجابة متعلمة');
-        return this._formatLearnedResponse(learnedAnswer);
+      // 1. التحقق من الذاكرة المتعلمة
+      const learnedResponse = await this.learningSystem.getLearnedResponse(query);
+      if (learnedResponse) {
+        console.log('🧠 تم العثور على إجابة من الذاكرة المتعلمة');
+        this._updateStats(true, performance.now() - startTime);
+        return this._formatLearnedResponse(learnedResponse);
       }
 
-      // 4. تصنيف النية
-      const intentClassification = await this.intentClassifier.classifyIntent(resolvedQuery);
-      console.log('🎯 تصنيف النية:', {
-        primary: intentClassification.primaryIntent,
-        confidence: intentClassification.confidence.toFixed(2),
-        type: intentClassification.queryType,
-        databases: intentClassification.suggestedDatabases
-      });
+      // 2. تصنيف الاستعلام
+      const classification = await this.intentClassifier.classify(query);
+      console.log('🎯 تصنيف الاستعلام:', classification);
 
-      // 5. بناء الاستعلامات الفرعية
-      const subQueries = this.intentClassifier.buildSubQueries(
-        resolvedQuery,
-        intentClassification
-      );
-
-      // 6. تنفيذ الاستراتيجية المناسبة
+      // 3. معالجة حسب النوع
       let response;
-
-      if (intentClassification.queryType === 'statistical') {
-        response = await this._handleStatisticalQuery(resolvedQuery, intentClassification);
-      } else if (intentClassification.queryType === 'comparative') {
-        response = await this._handleComparativeQuery(resolvedQuery, intentClassification);
-      } else if (intentClassification.requiresCrossReference) {
-        response = await this._handleCrossReferenceQuery(subQueries, intentClassification);
-      } else {
-        response = await this._handleSimpleQuery(resolvedQuery, intentClassification);
+      
+      switch (classification.queryType) {
+        case 'simple':
+        case 'contextual':
+          response = await this._handleSimpleQuery(query, classification);
+          break;
+        
+        case 'statistical':
+          response = await this._handleStatisticalQuery(query, classification);
+          break;
+        
+        case 'comparative':
+          response = await this._handleComparativeQuery(query, classification);
+          break;
+        
+        case 'cross_reference':
+          response = await this._handleCrossReferenceQuery(
+            classification.subQueries,
+            classification
+          );
+          break;
+        
+        default:
+          response = await this._handleSimpleQuery(query, classification);
       }
 
-      // 7. تحديث الذاكرة السياقية
-      await this._updateContextMemory(userQuery, response, intentClassification);
-
-      // 8. حفظ في سجل المحادثة
+      // 4. تحديث الذاكرة والإحصائيات
+      await this._updateContextMemory(query, response, classification);
       this._addToConversationHistory({
-        query: userQuery,
-        normalized: normalized,
-        response: response,
+        query,
+        response,
         timestamp: new Date().toISOString()
       });
 
-      // 9. تحديث الإحصائيات
       const responseTime = performance.now() - startTime;
-      this.stats.successfulQueries++;
-      this._updateAverageResponseTime(responseTime);
+      this._updateStats(response.success, responseTime);
 
-      console.log(`✅ تمت المعالجة في ${responseTime.toFixed(2)}ms`);
+      console.log(`✅ اكتملت المعالجة (${responseTime.toFixed(0)}ms)`);
+      console.log(${'='.repeat(60)}\n);
 
-      this.isProcessing = false;
       return response;
 
     } catch (error) {
       console.error('❌ خطأ في المعالجة:', error);
-      this.stats.failedQueries++;
-      this.isProcessing = false;
-
+      this._updateStats(false, performance.now() - startTime);
+      
       return {
         success: false,
-        message: 'عذراً، حدث خطأ أثناء معالجة سؤالك. حاول إعادة صياغته.',
+        message: 'حدث خطأ أثناء معالجة الاستعلام',
         error: error.message
       };
+    } finally {
+      this.isProcessing = false;
     }
   }
 
   /**
-   * ✅ معالجة سؤال بسيط
+   * 📝 معالجة سؤال بسيط
    */
   async _handleSimpleQuery(query, classification) {
-    console.log('✅ معالجة سؤال بسيط...');
+    console.log('📝 معالجة سؤال بسيط...');
 
     const results = await this.vectorEngine.parallelSearch(query, {
       topK: 5,
@@ -395,12 +441,15 @@ class AIExpertCore {
       queryType: classification.queryType
     });
 
-    const totalResults = results.totalResults || 0;
+    let totalResults = 0;
+    classification.suggestedDatabases.forEach(db => {
+      totalResults += results[db]?.length || 0;
+    });
 
     if (totalResults === 0) {
       return {
         success: false,
-        type: 'no_results',
+        type: 'simple',
         message: `لم أجد معلومات دقيقة كافية للإجابة على "${query}". لقد بحثت في: ${classification.suggestedDatabases.join(', ')}.`,
         query,
         searchedIn: classification.suggestedDatabases
@@ -624,6 +673,21 @@ class AIExpertCore {
       learnedAt: learnedData.learnedAt,
       usageCount: learnedData.usageCount
     };
+  }
+
+  /**
+   * تحديث الإحصائيات
+   */
+  _updateStats(success, responseTime) {
+    this.stats.totalQueries++;
+    
+    if (success) {
+      this.stats.successfulQueries++;
+    } else {
+      this.stats.failedQueries++;
+    }
+    
+    this._updateAverageResponseTime(responseTime);
   }
 
   /**
