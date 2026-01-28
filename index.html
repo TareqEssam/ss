@@ -110,6 +110,9 @@
   <script src="data/activity_vectors.js"></script>
   <script src="data/decision104_vectors.js"></script>
   <script src="data/industrial_vectors.js"></script>
+  
+  <!-- ✅ ملف الإصلاح السريع - يحوّل الصيغة القديمة للجديدة -->
+  <script src="data/vectors-fix.js"></script>
 
   <!-- ========================================
        الخطوة 2: قواعد البيانات النصية (المشوشة)
@@ -148,8 +151,8 @@
   ======================================== -->
   <script>
 /**
- * 🚀 كود التهيئة الكامل المُحسّن
- * النسخة النهائية المُصححة
+ * 🚀 كود التهيئة - النسخة البسيطة
+ * يعتمد على vectors-fix.js لإصلاح التحويل
  */
 
 (async function() {
@@ -166,142 +169,71 @@
 
   try {
     // ================================================================
-    // المرحلة 1: التحقق من قواعد البيانات المتجهية
+    // التحقق السريع من قواعد البيانات
     // ================================================================
-    updateProgress('📦 التحقق من قواعد البيانات المتجهية...');
-    console.log('📦 الخطوة 1: التحقق من قواعد البيانات المتجهية...');
+    updateProgress('📦 التحقق من قواعد البيانات...');
+    console.log('📦 التحقق من قواعد البيانات المتجهية...');
     
-    // انتظار تحميل السكريپتات (قد تستغرق وقتاً)
-    let attempts = 0;
-    const maxAttempts = 50; // 5 ثوانٍ
-    
-    while (attempts < maxAttempts) {
-      // طريقة 1: التحقق من window.activityVectors (الصيغة الجديدة)
-      if (window.activityVectors && window.decision104Vectors && window.industrialVectors) {
-        console.log('   ✅ قواعد المتجهات محملة (الصيغة الجديدة)');
-        break;
-      }
-      
-      // طريقة 2: التحقق من window.activityVectorsData (الصيغة القديمة)
-      if (window.activityVectorsData && window.decisionVectorsData && window.industrialVectorsData) {
-        console.log('   ✅ قواعد المتجهات محملة (الصيغة القديمة)');
-        console.log('   🔄 جاري التحويل للصيغة الجديدة...');
-        
-        // تحويل للصيغة الجديدة تلقائياً
-        window.activityVectors = {
-          data: window.activityVectorsData.vectors,
-          name: window.activityVectorsData.name,
-          version: window.activityVectorsData.version,
-          dimension: window.activityVectorsData.dimension
-        };
-        
-        window.decision104Vectors = {
-          data: window.decisionVectorsData.vectors,
-          name: window.decisionVectorsData.name,
-          version: window.decisionVectorsData.version,
-          dimension: window.decisionVectorsData.dimension
-        };
-        
-        window.industrialVectors = {
-          data: window.industrialVectorsData.vectors,
-          name: window.industrialVectorsData.name,
-          version: window.industrialVectorsData.version,
-          dimension: window.industrialVectorsData.dimension
-        };
-        
-        console.log('   ✅ تم التحويل بنجاح');
-        break;
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-      attempts++;
-      
-      if (attempts % 10 === 0) {
-        console.log(`   ⏳ انتظار... ${(attempts * 100) / 1000}s`);
-      }
-    }
-    
-    // التحقق النهائي
     if (!window.activityVectors || !window.decision104Vectors || !window.industrialVectors) {
       throw new Error(
-        '❌ فشل تحميل قواعد المتجهات!\n\n' +
-        'الحلول الممكنة:\n' +
-        '1. تأكد من وجود الملفات في /data/\n' +
-        '2. أضف الكود المطلوب في نهاية كل ملف (راجع vector-files-fix-code.js)\n' +
-        '3. افتح complete-system-test.html للتشخيص التفصيلي'
+        '❌ ملفات المتجهات غير محملة!\n\n' +
+        'تأكد من:\n' +
+        '1. وجود الملفات في /data/\n' +
+        '2. تحميل vectors-fix.js بعد ملفات المتجهات\n' +
+        '3. فتح complete-system-test.html للتشخيص'
       );
     }
 
-    console.log('');
     console.log('✅ قواعد المتجهات جاهزة:');
     console.log(`   • الأنشطة: ${window.activityVectors.data.length} متجه`);
     console.log(`   • القرار 104: ${window.decision104Vectors.data.length} متجه`);
     console.log(`   • المناطق: ${window.industrialVectors.data.length} متجه`);
-
-    // ================================================================
-    // المرحلة 2: التحقق من قواعد البيانات النصية
-    // ================================================================
-    updateProgress('🔍 التحقق من قواعد البيانات النصية...');
     console.log('');
-    console.log('🔍 الخطوة 2: التحقق من قواعد البيانات النصية...');
-    
-    if (typeof masterActivityDB === 'undefined') {
-      throw new Error('❌ ملف activity_database-s.js غير محمل!');
-    }
-    if (typeof decision104DB === 'undefined') {
-      throw new Error('❌ ملف decision104_database-s.js غير محمل!');
-    }
-    if (typeof industrialDB === 'undefined') {
-      throw new Error('❌ ملف industrial_database-s.js غير محمل!');
+
+    // التحقق من قواعد البيانات النصية
+    if (typeof masterActivityDB === 'undefined' || 
+        typeof decision104DB === 'undefined' || 
+        typeof industrialDB === 'undefined') {
+      throw new Error('❌ قواعد البيانات النصية غير محملة!');
     }
 
-    window.textDatabases = {
-      activities: masterActivityDB,
-      decision104: decision104DB,
-      industrial: industrialDB
-    };
-
-    console.log('✅ قواعد البيانات النصية محملة:');
-    console.log(`   • masterActivityDB: ${masterActivityDB.length} سجل`);
-    console.log(`   • decision104DB: ${typeof decision104DB === 'object' ? '✓' : '✗'}`);
-    console.log(`   • industrialDB: ${industrialDB.length} سجل`);
+    console.log('✅ قواعد البيانات النصية جاهزة');
+    console.log('');
 
     // ================================================================
-    // المرحلة 3: إنشاء المكونات
+    // إنشاء وتهيئة المكونات
     // ================================================================
     updateProgress('🔧 إنشاء المكونات...');
-    console.log('');
-    console.log('🔧 الخطوة 3: إنشاء المكونات...');
+    console.log('🔧 إنشاء المكونات...');
     
     const aiCore = new AIExpertCore();
     const voiceHandler = new VoiceHandler();
     const typewriterEffect = new TypewriterEffect();
     const responseGenerator = new ResponseGenerator();
-    const progressIndicator = new ProgressIndicator();
     
-    console.log('✅ تم إنشاء جميع المكونات');
+    console.log('✅ تم إنشاء المكونات');
+    console.log('');
 
     // ================================================================
-    // المرحلة 4: تهيئة النواة
+    // تهيئة النواة
     // ================================================================
-    updateProgress('🧠 تهيئة النواة الرئيسية...');
-    console.log('');
-    console.log('🧠 الخطوة 4: تهيئة النواة الرئيسية...');
+    updateProgress('🧠 تهيئة النواة...');
+    console.log('🧠 تهيئة النواة الرئيسية...');
     
-    const coreInitialized = await aiCore.initialize();
+    const coreInit = await aiCore.initialize();
     
-    if (!coreInitialized) {
-      throw new Error('❌ فشلت تهيئة AIExpertCore - راجع الأخطاء أعلاه');
+    if (!coreInit) {
+      throw new Error('❌ فشلت تهيئة AIExpertCore');
     }
     
-    console.log('✅ النواة الرئيسية جاهزة');
+    console.log('✅ النواة جاهزة');
+    console.log('');
 
     // ================================================================
-    // المرحلة 5: تهيئة الواجهة
+    // تهيئة الواجهة
     // ================================================================
-    updateProgress('🎨 تهيئة واجهة المستخدم...');
-    console.log('');
-    console.log('🎨 الخطوة 5: تهيئة واجهة المستخدم...');
+    updateProgress('🎨 تهيئة الواجهة...');
+    console.log('🎨 تهيئة الواجهة...');
     
     const uiController = new UIController(
       aiCore,
@@ -312,113 +244,71 @@
     
     await uiController.initialize();
     console.log('✅ الواجهة جاهزة');
+    console.log('');
 
     // ================================================================
-    // المرحلة 6: حفظ في window
+    // حفظ في window
     // ================================================================
     window.aiAssistant = {
       core: aiCore,
       ui: uiController,
       voice: voiceHandler,
-      typewriter: typewriterEffect,
-      vectorDatabases: {
-        activity: window.activityVectors,
-        decision104: window.decision104Vectors,
-        industrial: window.industrialVectors
-      },
-      textDatabases: window.textDatabases,
-      progressIndicator: progressIndicator,
       
       // دوال مساعدة
-      stats: () => {
-        console.log('');
-        console.log('📊 ════════════════════════════════════════');
-        console.log('📊 إحصائيات النظام');
-        console.log('📊 ════════════════════════════════════════');
-        console.log('');
-        console.log('🧠 النواة:', aiCore.getStatistics());
-        console.log('');
-      },
-      
-      test: async () => {
-        console.log('🧪 اختبار سريع...');
-        const result = await aiCore.processQuery('ما هي المناطق الصناعية؟');
-        console.log('النتيجة:', result);
-        return result;
-      }
+      stats: () => console.log(aiCore.getStatistics()),
+      test: () => aiCore.processQuery('ما هي المناطق الصناعية؟')
     };
 
     // ================================================================
-    // المرحلة 7: إخفاء شاشة التحميل
+    // إخفاء شاشة التحميل
     // ================================================================
     document.getElementById('loading-screen').style.display = 'none';
 
     // ================================================================
-    // رسالة النجاح النهائية
+    // النجاح!
     // ================================================================
-    console.log('');
     console.log('═══════════════════════════════════════════════════════════');
     console.log('✅ ✅ ✅  النظام جاهز للعمل!  ✅ ✅ ✅');
     console.log('═══════════════════════════════════════════════════════════');
     console.log('');
-    console.log('📊 الإحصائيات:');
-    console.log(`   • الأنشطة: ${window.activityVectors.data.length} متجه`);
-    console.log(`   • القرار 104: ${window.decision104Vectors.data.length} متجه`);
-    console.log(`   • المناطق: ${window.industrialVectors.data.length} متجه`);
-    console.log('');
-    console.log('💡 أوامر مفيدة:');
-    console.log('   • aiAssistant.stats() - عرض الإحصائيات');
-    console.log('   • aiAssistant.test() - اختبار سريع');
-    console.log('   • aiAssistant.core.initialized - التحقق من التهيئة');
+    console.log('💡 جرّب: aiAssistant.test()');
     console.log('');
 
   } catch (error) {
     console.error('');
     console.error('═══════════════════════════════════════════════════════════');
-    console.error('❌ فشل تحميل النظام!');
+    console.error('❌ فشل التحميل!');
     console.error('═══════════════════════════════════════════════════════════');
     console.error('');
     console.error('الخطأ:', error.message);
     console.error('');
-    console.error('التفاصيل:', error);
-    console.error('');
     
-    // عرض رسالة خطأ مفصلة
+    // رسالة خطأ
     document.getElementById('loading-screen').innerHTML = `
-      <div style="color: white; text-align: center; padding: 20px; max-width: 700px;">
-        <h2 style="color: #ef4444; margin-bottom: 20px;">❌ خطأ في التحميل</h2>
+      <div style="color: white; text-align: center; padding: 30px; max-width: 700px;">
+        <h2 style="color: #ef4444; margin-bottom: 20px; font-size: 2em;">❌ خطأ في التحميل</h2>
         
-        <div style="background: rgba(239, 68, 68, 0.1); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-          <p style="margin-bottom: 15px; font-weight: bold; font-size: 16px;">${error.message}</p>
-          <pre style="text-align: left; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 4px; overflow: auto; max-height: 200px; font-size: 12px; line-height: 1.5;">${error.stack || 'لا توجد معلومات إضافية'}</pre>
+        <div style="background: rgba(239, 68, 68, 0.2); padding: 25px; border-radius: 12px; margin-bottom: 25px; text-align: right;">
+          <p style="font-size: 16px; line-height: 1.6; margin-bottom: 15px;">${error.message.replace(/\n/g, '<br>')}</p>
         </div>
         
-        <div style="text-align: right; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-          <h3 style="margin-bottom: 15px;">📋 قائمة الفحص:</h3>
-          <ul style="list-style: none; padding: 0;">
-            <li style="margin: 10px 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px;">
-              ✓ ملفات المتجهات في /data/ (activity_vectors.js, etc.)
-            </li>
-            <li style="margin: 10px 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px;">
-              ✓ الكود المُضاف في نهاية كل ملف متجهات
-            </li>
-            <li style="margin: 10px 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px;">
-              ✓ ملف ai-expert-core-CORRECTED.js في /js/
-            </li>
-            <li style="margin: 10px 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px;">
-              ✓ فتح Console (F12) وقراءة الأخطاء
-            </li>
-          </ul>
+        <div style="background: rgba(255,255,255,0.1); padding: 25px; border-radius: 12px; margin-bottom: 25px;">
+          <h3 style="margin-bottom: 15px; font-size: 1.3em;">📋 الحل السريع:</h3>
+          <ol style="text-align: right; padding-right: 20px; line-height: 2;">
+            <li>ضع ملف <code style="background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 4px;">vectors-fix.js</code> في مجلد <code>/data/</code></li>
+            <li>أو استخدم سكريبت <code style="background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 4px;">fix-vector-files.py</code></li>
+            <li>أو افتح <code style="background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 4px;">complete-system-test.html</code> للتشخيص</li>
+          </ol>
         </div>
         
-        <div style="display: flex; gap: 10px; justify-content: center;">
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
           <button onclick="location.reload()" 
-                  style="padding: 12px 24px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
+                  style="padding: 15px 30px; background: #3b82f6; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: bold;">
             🔄 إعادة المحاولة
           </button>
           
           <button onclick="window.open('complete-system-test.html', '_blank')" 
-                  style="padding: 12px 24px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
+                  style="padding: 15px 30px; background: #10b981; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: bold;">
             🔍 فحص النظام
           </button>
         </div>
