@@ -182,20 +182,38 @@ class AIExpertCore {
 
   _validateDatabases() {
     console.log('🔍 التحقق من قواعد البيانات (إصدار 3.1)...');
-
     let isValid = true;
-  ['activity', 'decision104', 'industrial'].forEach(dbName => {
-    const db = this.vectorDatabases[dbName];
-    // التحقق من وجود المفتاح vectors (الإصدار 3.1)
-    const records = db?.vectors || db?.data; 
 
-    if (!db || !records || !Array.isArray(records)) {
-      console.error(`❌ قاعدة ${dbName} غير صالحة!`);
-      isValid = false;
-    }
-  });
-  return isValid;
-}
+    ['activity', 'decision104', 'industrial'].forEach(dbName => {
+      const db = this.vectorDatabases[dbName];
+      // التحقق من وجود المفتاح الجديد vectors أو القديم data
+      const recordsList = db?.vectors || db?.data;
+
+      if (!db || !recordsList || !Array.isArray(recordsList)) {
+        console.error(`❌ قاعدة ${dbName} غير صالحة أو فارغة!`);
+        isValid = false;
+        return;
+      }
+
+      let validRecords = 0;
+      recordsList.forEach(record => {
+        // التحقق من وجود المتجه في الهيكل الجديد أو القديم
+        if (record.vector || (record.embeddings && record.embeddings.multilingual_minilm)) {
+          validRecords++;
+        }
+      });
+
+      const percentage = ((validRecords / recordsList.length) * 100).toFixed(1);
+      console.log(`   ✓ ${dbName}: ${validRecords}/${recordsList.length} سجل صالح (${percentage}%)`);
+
+      if (validRecords === 0) {
+        console.error(`❌ قاعدة ${dbName} لا تحتوي على متجهات صالحة!`);
+        isValid = false;
+      }
+    });
+
+    return isValid;
+  }
 
       // التحقق من صحة السجلات (البحث في الهيكل الجديد والقديم)
       let validRecords = 0;
@@ -586,5 +604,6 @@ class AIExpertCore {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = AIExpertCore;
 }
+
 
 
