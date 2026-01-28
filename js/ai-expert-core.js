@@ -374,7 +374,7 @@ class AIExpertCore {
       }
 
       // 2. تصنيف الاستعلام
-      const classification = await this.intentClassifier.classify(query);
+      const classification = await this.intentClassifier.classifyIntent(query);
       console.log('🎯 تصنيف الاستعلام:', classification);
 
       // 3. معالجة حسب النوع
