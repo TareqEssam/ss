@@ -1,10 +1,11 @@
 /**
- * 🤖 محمل Transformers.js - نموذج متجهات حقيقي
- * Real Embedding Model Loader
+ * 🤖 محمل Transformers.js - نموذج متجهات حقيقي (مُصلح)
+ * Real Embedding Model Loader - FIXED VERSION
  * 
  * استخدام نموذج حقيقي للمتجهات في المتصفح
  * 
- * @version 2.0.0
+ * @version 2.1.0 - FIXED CDN PATH
+ * @date 2026-01-28
  */
 
 class TransformersLoader {
@@ -78,18 +79,26 @@ class TransformersLoader {
       console.log('🔄 تهيئة النموذج...');
 
       // ✅ استخراج pipeline من المكتبة
-      const { pipeline } = this.transformers;
+      const { pipeline, env } = this.transformers;
       
       if (!pipeline) {
         throw new Error('دالة pipeline غير متاحة في المكتبة');
       }
 
-      // ✅ تحميل النموذج
+      // 🔥 FIX: تعيين المسار للنماذج من HuggingFace CDN الرسمي
+      if (env) {
+        env.allowLocalModels = false;
+        env.useBrowserCache = true;
+        console.log('✅ تم تعيين استخدام CDN الرسمي فقط');
+      }
+
+      // ✅ تحميل النموذج من HuggingFace CDN (ليس من GitHub)
+      console.log('📥 تحميل النموذج من HuggingFace CDN...');
       this.pipeline = await pipeline(
         'feature-extraction',
         'Xenova/paraphrase-multilingual-MiniLM-L12-v2',
         {
-          quantized: true, // استخدام النموذج المضغوط للسرعة
+          quantized: true,
           progress_callback: (progress) => {
             if (progress.status === 'progress') {
               const percentage = Math.round(progress.progress || 0);
@@ -98,6 +107,8 @@ class TransformersLoader {
               console.log(`✅ اكتمل: ${progress.file}`);
             } else if (progress.status === 'ready') {
               console.log(`🎯 جاهز: ${progress.file}`);
+            } else if (progress.status === 'initiate') {
+              console.log(`🔄 بدء: ${progress.file}`);
             }
           }
         }
@@ -111,7 +122,8 @@ class TransformersLoader {
         type: 'feature-extraction',
         model: 'Xenova/paraphrase-multilingual-MiniLM-L12-v2',
         quantized: true,
-        status: 'ready'
+        status: 'ready',
+        source: 'HuggingFace CDN'
       });
       
       return { success: true, model: this.pipeline };
@@ -123,6 +135,8 @@ class TransformersLoader {
         stack: error.stack,
         transformersAvailable: !!this.transformers
       });
+      
+      console.warn('⚠️ سيتم استخدام Fallback embeddings');
       
       this.loadError = error;
       this.isLoading = false;
@@ -150,19 +164,18 @@ class TransformersLoader {
       
       const script = document.createElement('script');
       script.src = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js';
-      script.type = 'text/javascript'; // ✅ تغيير من module إلى text/javascript
+      script.type = 'module';
       script.crossOrigin = 'anonymous';
       
       script.onload = () => {
         console.log('✅ تم تحميل السكريبت بنجاح');
-        // الانتظار قليلاً للتأكد من تهيئة المكتبة
         setTimeout(() => {
           if (window.transformers) {
             console.log('✅ المكتبة متاحة في window.transformers');
             resolve();
           } else {
             console.warn('⚠️ السكريبت محمل لكن window.transformers غير متاح');
-            resolve(); // نكمل على أي حال
+            resolve();
           }
         }, 200);
       };
@@ -201,7 +214,6 @@ class TransformersLoader {
         normalize: true
       });
 
-      // استخراج المتجه
       const embedding = Array.from(output.data);
       
       console.log(`✅ تم توليد متجه بطول: ${embedding.length}`);
