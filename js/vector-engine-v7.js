@@ -275,12 +275,10 @@ class VectorEngineV7 {
    * استخراج نص السجل
    */
   _extractRecordText(record) {
-    const data = record.original_data;
-    return data.text_preview || 
-           data.text || 
-           data.name || 
-           data.value || 
-           JSON.stringify(data).substring(0, 200);
+    if (!record) return "";
+    const data = record.original_data || record;
+    if (!data || typeof data !== "object") return "";
+    return data.text_preview || data.text || data.name || data.value || JSON.stringify(data).substring(0, 200);
   }
 
   /**
