@@ -359,12 +359,18 @@ class AIExpertCore {
       console.log(`🔍 استعلام جديد: "${query}"`);
       console.log(`${'='.repeat(60)}`);
 
-      // 1. التحقق من الذاكرة المتعلمة
-      const learnedResponse = await this.learningSystem.getLearnedResponse(query);
-      if (learnedResponse) {
-        console.log('🧠 تم العثور على إجابة من الذاكرة المتعلمة');
-        this._updateStats(true, performance.now() - startTime);
-        return this._formatLearnedResponse(learnedResponse);
+      // 1. التحقق من الذاكرة المتعلمة (اختياري)
+      try {
+        if (this.learningSystem && typeof this.learningSystem.getLearnedResponse === 'function') {
+          const learnedResponse = await this.learningSystem.getLearnedResponse(query);
+          if (learnedResponse) {
+            console.log('🧠 تم العثور على إجابة من الذاكرة المتعلمة');
+            this._updateStats(true, performance.now() - startTime);
+            return this._formatLearnedResponse(learnedResponse);
+          }
+        }
+      } catch (err) {
+        console.warn('⚠️ تحذير: خطأ في نظام التعلم:', err.message);
       }
 
       // 2. تصنيف الاستعلام
